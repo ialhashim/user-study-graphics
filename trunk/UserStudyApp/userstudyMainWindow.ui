@@ -21,7 +21,7 @@
     <item>
      <widget class="QTabWidget" name="screens">
       <property name="currentIndex">
-       <number>1</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="WelcomeScreen">
        <attribute name="title">
@@ -29,7 +29,7 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_5">
         <item>
-         <widget class="QFrame" name="welcomeFrame">
+         <widget class="QFrame" name="WelcomeScreenFrame">
           <layout class="QGridLayout" name="gridLayout_4">
            <item row="2" column="0">
             <spacer name="horizontalSpacer_4">
@@ -154,7 +154,7 @@ QPushButton:pressed{
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
-         <widget class="QFrame" name="tutorialFrame">
+         <widget class="QFrame" name="TutorialScreenFrame">
           <property name="frameShape">
            <enum>QFrame::StyledPanel</enum>
           </property>
@@ -184,6 +184,16 @@ QPushButton:pressed{
                </property>
                <property name="styleSheet">
                 <string notr="true"/>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="Phonon::SeekSlider" name="seekSlider">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
                </property>
               </widget>
              </item>
@@ -241,7 +251,7 @@ QPushButton:pressed{
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_7">
         <item>
-         <widget class="QFrame" name="DesignFrame">
+         <widget class="QFrame" name="DesignScreenFrame">
           <property name="frameShape">
            <enum>QFrame::StyledPanel</enum>
           </property>
@@ -306,6 +316,16 @@ QPushButton:pressed{
            <item row="0" column="0" colspan="2">
             <layout class="QVBoxLayout" name="designLayout">
              <item>
+              <widget class="QFrame" name="designFrame">
+               <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Raised</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
               <spacer name="verticalSpacer_6">
                <property name="orientation">
                 <enum>Qt::Vertical</enum>
@@ -331,7 +351,7 @@ QPushButton:pressed{
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_9">
         <item>
-         <widget class="QFrame" name="evaluateFrame">
+         <widget class="QFrame" name="EvaluateScreenFrame">
           <property name="frameShape">
            <enum>QFrame::StyledPanel</enum>
           </property>
@@ -395,6 +415,16 @@ QPushButton:pressed{
            </item>
            <item row="0" column="0" colspan="2">
             <layout class="QVBoxLayout" name="evaluateLayout">
+             <item>
+              <widget class="QFrame" name="evaluateFrame">
+               <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Raised</enum>
+               </property>
+              </widget>
+             </item>
              <item>
               <spacer name="verticalSpacer_7">
                <property name="orientation">
@@ -611,6 +641,11 @@ font-size: 16px;</string>
    <class>Phonon::VideoPlayer</class>
    <extends>QWidget</extends>
    <header location="global">phonon/videoplayer.h</header>
+  </customwidget>
+  <customwidget>
+   <class>Phonon::SeekSlider</class>
+   <extends>QWidget</extends>
+   <header location="global">phonon/seekslider.h</header>
   </customwidget>
  </customwidgets>
  <resources>
