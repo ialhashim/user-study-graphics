@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Screens">
+      <UniqueIdentifier>{cd9f2163-64fb-4484-aac9-339acf85235b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Screens\WelcomeScreen">
+      <UniqueIdentifier>{15c5090d-4c4d-4e32-9754-47f560c387dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Screens\DesignScreen">
+      <UniqueIdentifier>{7312a7e4-c75e-4c30-bdb1-9e8f7a89c3cc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Screens\EvaluateScreen">
+      <UniqueIdentifier>{4bf513a7-0f40-4ead-a6a7-de951c37b258}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Screens\FinishScreen">
+      <UniqueIdentifier>{42ada90a-ad35-4636-be0b-1a80589b90f0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Screens\TutorialScreen">
+      <UniqueIdentifier>{eb321d69-8967-4910-b12e-917fb3bda615}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MainWindow">
+      <UniqueIdentifier>{e32ec285-83c9-4a0a-9611-f376506f31e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MainWindow\Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="MainWindow\Generated Files">
+      <UniqueIdentifier>{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}</UniqueIdentifier>
+      <Extensions>moc;h;cpp</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="MainWindow\Generated Files\Debug">
+      <UniqueIdentifier>{315dcd45-1650-4a2d-885f-083a3aa8bb0d}</UniqueIdentifier>
+      <Extensions>cpp;moc</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="MainWindow\Generated Files\Release">
+      <UniqueIdentifier>{b5c55d2d-0211-41b1-9171-9103acb9876c}</UniqueIdentifier>
+      <Extensions>cpp;moc</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="MainWindow\Form Files">
+      <UniqueIdentifier>{99349809-55BA-4b9d-BF79-8FDBB0286EB3}</UniqueIdentifier>
+      <Extensions>ui</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="GeneratedFiles\Debug\moc_userstudy.cpp">
+      <Filter>MainWindow\Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_userstudy.cpp">
+      <Filter>MainWindow\Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\qrc_userstudyResource.cpp">
+      <Filter>MainWindow\Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>MainWindow</Filter>
+    </ClCompile>
+    <ClCompile Include="userstudy.cpp">
+      <Filter>MainWindow</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="userstudyMainWindow.ui">
+      <Filter>MainWindow\Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Resources\userstudyResource.qrc">
+      <Filter>MainWindow\Resource Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="userstudy.h">
+      <Filter>MainWindow</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GeneratedFiles\ui_userstudyMainWindow.h">
+      <Filter>MainWindow\Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>MainWindow</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resources\UserStudyApp.rc">
+      <Filter>MainWindow\Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
