@@ -74,6 +74,12 @@
     <CustomBuild Include="userstudy.h">
       <Filter>MainWindow</Filter>
     </CustomBuild>
+    <CustomBuild Include="Screens\EvaluateWidget.ui">
+      <Filter>Screens\EvaluateScreen</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Screens\DesignWidget.ui">
+      <Filter>Screens\DesignScreen</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GeneratedFiles\ui_userstudyMainWindow.h">
@@ -81,6 +87,12 @@
     </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>MainWindow</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_EvaluateWidget.h">
+      <Filter>MainWindow\Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_DesignWidget.h">
+      <Filter>MainWindow\Generated Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

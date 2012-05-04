@@ -1,6 +1,8 @@
 #include "userstudy.h"
 #include <phonon/phonon>
 
+// Screen widgets
+
 UserStudyApp::UserStudyApp(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
 {
@@ -10,8 +12,6 @@ UserStudyApp::UserStudyApp(QWidget *parent, Qt::WFlags flags)
 	for(int i = 0; i < ui.screens->count(); i++)
 		ui.screens->setTabEnabled(i, false);
 	
-	ui.screens->setTabEnabled(WELCOME_SCREEN, true);
-
 	// Connections
 	connect(ui.nextButtonWelcome, SIGNAL(clicked()), this, SLOT(nextButtonWelcome()));
 	connect(ui.nextButtonTutorial, SIGNAL(clicked()), this, SLOT(nextButtonTutorial()));
@@ -20,6 +20,17 @@ UserStudyApp::UserStudyApp(QWidget *parent, Qt::WFlags flags)
 
 	connect(ui.sendResultButton, SIGNAL(clicked()), this, SLOT(sendResultButton()));
 	connect(ui.saveResultButton, SIGNAL(clicked()), this, SLOT(saveResultButton()));
+
+	// Create custom widgets
+	designWidget = new Ui::DesignWidget();
+	evalWidget = new Ui::EvaluateWidget();
+
+	// Add custom widgets to each screen
+	designWidget->setupUi(ui.designFrame);
+	evalWidget->setupUi(ui.evaluateFrame);
+
+	// Show welcome screen
+	setScreen(WELCOME_SCREEN);
 }
 
 UserStudyApp::~UserStudyApp()
@@ -40,19 +51,19 @@ void UserStudyApp::nextButtonWelcome()
 void UserStudyApp::nextButtonTutorial()
 {
 	ui.screens->setTabEnabled(DESIGN_SCREEN, true);
-	ui.screens->setCurrentWidget(ui.screens->widget(DESIGN_SCREEN));
+	setScreen(DESIGN_SCREEN);
 }
 
 void UserStudyApp::nextButtonDesign()
 {
 	ui.screens->setTabEnabled(EVALUATE_SCREEN, true);
-	ui.screens->setCurrentWidget(ui.screens->widget(EVALUATE_SCREEN));
+	setScreen(EVALUATE_SCREEN);
 }
 
 void UserStudyApp::nextButtonEvaluate()
 {
 	ui.screens->setTabEnabled(FINISH_SCREEN, true);
-	ui.screens->setCurrentWidget(ui.screens->widget(FINISH_SCREEN));
+	setScreen(FINISH_SCREEN);
 }
 
 void UserStudyApp::sendResultButton()
@@ -63,4 +74,15 @@ void UserStudyApp::sendResultButton()
 void UserStudyApp::saveResultButton()
 {
 
+}
+
+QWidget * UserStudyApp::getScreen( SCREENS screenIndex )
+{
+	return ui.screens->widget(screenIndex);
+}
+
+void UserStudyApp::setScreen( SCREENS screenIndex )
+{
+	ui.screens->setTabEnabled(screenIndex, true);
+	ui.screens->setCurrentWidget(getScreen(screenIndex));
 }
