@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/UserStudyApp">
+        <file>logo.svg</file>
+        <file>app.ico</file>
+        <file>nextPage.ico</file>
+        <file>tutorial.mp4</file>
+    </qresource>
+</RCC>
