@@ -169,6 +169,9 @@
     <ClInclude Include="Screens\sphereDraw.h">
       <Filter>Screens\DesignScreen\utility</Filter>
     </ClInclude>
+    <ClInclude Include="Screens\drawRoundRect.h">
+      <Filter>Screens\DesignScreen\utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources\UserStudyApp.rc">

@@ -5,13 +5,18 @@
 #include "MyDesigner.h"
 #define GL_MULTISAMPLE 0x809D
 
-#include "sphereDraw.h"
 #include <QKeyEvent>
 #include <QFileDialog>
 #include <QFileInfo>
 
+// Misc.
+#include "sphereDraw.h"
+#include "drawRoundRect.h"
+
 MyDesigner::MyDesigner( QWidget * parent /*= 0*/ ) : QGLViewer(parent)
 {
+	selectMode = SELECT_NONE;
+
 	skyRadius = 1.0;
 
 	activeMesh = NULL;
@@ -170,6 +175,29 @@ void MyDesigner::postDraw()
 
 	// Revolve Around Point, line when camera rolls, zoom region
 	drawVisualHints();
+
+	drawOSD();
+}
+
+void MyDesigner::drawOSD()
+{
+	QStringList selectModeTxt;
+	selectModeTxt << "None" << "Mesh" << "Vertex" << "Edge" 
+		<< "Face" << "Primitive" << "Curve" << "FFD" << "Voxel";
+
+	/* Mode text */
+	this->startScreenCoordinatesSystem();
+	glEnable(GL_BLEND);
+	glColor4dv(Vec4d(0,0,0,0.25));
+	drawRoundRect(50,50,100,100);
+	this->stopScreenCoordinatesSystem();
+
+	glColor4dv(Vec4d(1,1,1,1));
+	drawText(15,15, "Select mode: " + selectModeTxt[selectMode]);
+
+	QFontMetrics fm(font);
+	int pixelsWide = fm.width("What's the width of this text?");
+	int pixelsHigh = fm.height();
 }
 
 void MyDesigner::drawCircleFade(double * color, double radius)
@@ -321,4 +349,19 @@ void MyDesigner::endUnderMesh()
 {
 	if(isEmpty()) return;
 	glPopMatrix();
+}
+
+void MyDesigner::drawWithNames()
+{
+
+}
+
+void MyDesigner::postSelection( const QPoint& point )
+{
+
+}
+
+void MyDesigner::setSelectMode( SelectMode toMode )
+{
+	this->selectMode = toMode;
 }
