@@ -6,6 +6,10 @@ using namespace qglviewer;
 class QSegMesh;
 class VBO;
 
+enum ViewMode { VIEW, SELECTION, MODIFY };
+enum SelectMode { SELECT_NONE, MESH, VERTEX, EDGE, FACE,
+	CONTROLLER, CONTROLLER_ELEMENT, FFD_DEFORMER, VOXEL_DEFORMER };
+
 class MyDesigner : public QGLViewer{
 	Q_OBJECT
 
@@ -17,10 +21,12 @@ public:
 	void setupLights();
 	void preDraw();
 	void draw();
+	void drawWithNames();
 	void postDraw();
 	void resetView();
 	void beginUnderMesh();
 	void endUnderMesh();
+	void drawOSD();
 
 	// VBOS
 	QMap<QString, VBO*> vboCollection;
@@ -34,6 +40,12 @@ public:
 	void mouseMoveEvent(QMouseEvent* e);
 	void wheelEvent(QWheelEvent* e);
 	void keyPressEvent(QKeyEvent *e);
+
+	// SELECTION
+	SelectMode selectMode;
+	QVector<int> selection;
+	void setSelectMode(SelectMode toMode);	
+	void postSelection(const QPoint& point);
 
 	// Object in the scene
 	QSegMesh * activeMesh;
@@ -52,4 +64,5 @@ private:
 signals:
 	void objectInserted();
 	void objectDiscarded( QString );
+
 };
