@@ -1,7 +1,8 @@
 #include "userstudy.h"
 #include <phonon/phonon>
 
-// Screen widgets
+#include "Screens/MyDesigner.h"
+MyDesigner * designer = NULL;
 
 UserStudyApp::UserStudyApp(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
@@ -30,7 +31,8 @@ UserStudyApp::UserStudyApp(QWidget *parent, Qt::WFlags flags)
 	evalWidget->setupUi(ui.evaluateFrame);
 
 	// Show welcome screen
-	setScreen(WELCOME_SCREEN);
+	//setScreen(WELCOME_SCREEN);
+	nextButtonTutorial();
 }
 
 UserStudyApp::~UserStudyApp()
@@ -50,6 +52,10 @@ void UserStudyApp::nextButtonWelcome()
 
 void UserStudyApp::nextButtonTutorial()
 {
+	// Add viewer
+	designer = new MyDesigner();
+	designWidget->viewerAreaLayout->addWidget(designer);
+
 	ui.screens->setTabEnabled(DESIGN_SCREEN, true);
 	setScreen(DESIGN_SCREEN);
 }
