@@ -106,11 +106,22 @@ void MyDesigner::drawObject()
 {
 	if (VBO::isVBOSupported()){
 		updateVBOs();
-		QMap<QString, VBO*>::iterator i;
-		for (i = vboCollection.begin(); i != vboCollection.end(); ++i)
-			(*i)->render();
+
+		glPushAttrib (GL_POLYGON_BIT);
+		glEnable (GL_CULL_FACE);
 
 		drawObjectOutline();
+
+		/** Draw front-facing polygons as filled */
+		glPolygonMode (GL_FRONT, GL_FILL);
+		glCullFace (GL_BACK);
+
+		/* Draw solid object */
+		for (QMap<QString, VBO*>::iterator i = vboCollection.begin(); i != vboCollection.end(); ++i)
+			(*i)->render();
+
+		/* GL_POLYGON_BIT */
+		glPopAttrib ();
 	} 
 	else{// Fall back
 		std::cout << "VBO is not supported." << std::endl;
@@ -120,33 +131,24 @@ void MyDesigner::drawObject()
 
 void MyDesigner::drawObjectOutline()
 {
-	glPushAttrib( GL_ALL_ATTRIB_BITS );
-	glEnable( GL_LIGHTING );
+	/** Draw back-facing polygons as red lines	*/
+	/* Disable lighting for outlining */
+	glPushAttrib (GL_LIGHTING_BIT | GL_LINE_BIT | GL_DEPTH_BUFFER_BIT);
+	glDisable (GL_LIGHTING);
 
-	glClearStencil(0);
-	glClear( GL_STENCIL_BUFFER_BIT );
-	glEnable( GL_STENCIL_TEST );
+	glPolygonMode(GL_BACK, GL_LINE);
+	glCullFace (GL_FRONT);
 
-	glStencilFunc( GL_ALWAYS, 1, 0xFFFF );
-	glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE );
+	glDepthFunc (GL_LEQUAL);
+	glLineWidth (skyRadius / 2.0);
 
-	glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-	glColor3f( 0.0f, 0.0f, 0.0f );
-	activeMesh->simpleDraw(true);
-	glDisable( GL_LIGHTING );
-
-	glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF );
-	glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE );
-
-	glLineWidth( 4 );
-	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-	glColor3f( 0.0f, 0.0f, 0.0f );
-	activeMesh->simpleDraw(false);
-
-	glPointSize( 4 );
-	activeMesh->simpleDraw(false, true);
-
-	glPopAttrib();
+	/* Draw wire object */
+	glColor3f (0.0f, 0.0f, 0.0f);
+	for (QMap<QString, VBO*>::iterator i = vboCollection.begin(); i != vboCollection.end(); ++i)
+		(*i)->render_depth();
+	
+	/* GL_LIGHTING_BIT | GL_LINE_BIT | GL_DEPTH_BUFFER_BIT */
+	glPopAttrib ();
 }
 
 void MyDesigner::postDraw()
@@ -262,8 +264,16 @@ void MyDesigner::loadMesh( QString fileName )
 {
 	if(fileName.isEmpty() || !QFileInfo(fileName).exists()) return;
 
+	QString newObjId = QFileInfo(fileName).fileName();
+	newObjId.chop(4);
+
 	QSegMesh * loadedMesh = new QSegMesh();
+
+	// Reading QSegMesh
 	loadedMesh->read(fileName);
+
+	// Set global ID for the mesh and all its segments
+	loadedMesh->setObjectName(newObjId);
 
 	setActiveObject(loadedMesh);
 }
