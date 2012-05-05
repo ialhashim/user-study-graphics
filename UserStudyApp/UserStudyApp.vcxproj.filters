@@ -46,6 +46,12 @@
       <UniqueIdentifier>{99349809-55BA-4b9d-BF79-8FDBB0286EB3}</UniqueIdentifier>
       <Extensions>ui</Extensions>
     </Filter>
+    <Filter Include="Screens\DesignScreen\project">
+      <UniqueIdentifier>{eef190e5-7029-4c1a-a5b4-529288995b11}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Screens\DesignScreen\utility">
+      <UniqueIdentifier>{81e0ba5e-31ab-4bf8-a050-7cc6d79c7d49}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GeneratedFiles\Debug\moc_userstudy.cpp">
@@ -62,6 +68,63 @@
     </ClCompile>
     <ClCompile Include="userstudy.cpp">
       <Filter>MainWindow</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\MyDesigner.cpp">
+      <Filter>Screens\DesignScreen</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_MyDesigner.cpp">
+      <Filter>MainWindow\Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_MyDesigner.cpp">
+      <Filter>MainWindow\Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GraphicsLibrary\Basic\Circle.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GraphicsLibrary\Mesh\QSegMesh.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GraphicsLibrary\Mesh\QSurfaceMesh.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GL\VBO\VBO.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GraphicsLibrary\Mesh\SurfaceMesh\Surface_mesh.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_QSegMesh.cpp">
+      <Filter>MainWindow\Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_QSegMesh.cpp">
+      <Filter>MainWindow\Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_QSurfaceMesh.cpp">
+      <Filter>MainWindow\Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_QSurfaceMesh.cpp">
+      <Filter>MainWindow\Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GraphicsLibrary\Mesh\SurfaceMesh\IO_.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GraphicsLibrary\Mesh\SurfaceMesh\IO_obj.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GraphicsLibrary\Mesh\SurfaceMesh\IO_off.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GraphicsLibrary\Mesh\SurfaceMesh\IO_stl.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Utility\SimpleDraw.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Utility\ColorMap.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GL\GLee.c">
+      <Filter>Screens\DesignScreen\project</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -80,6 +143,15 @@
     <CustomBuild Include="Screens\DesignWidget.ui">
       <Filter>Screens\DesignScreen</Filter>
     </CustomBuild>
+    <CustomBuild Include="Screens\MyDesigner.h">
+      <Filter>Screens\DesignScreen</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Screens\project\GraphicsLibrary\Mesh\QSegMesh.h">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Screens\project\GraphicsLibrary\Mesh\QSurfaceMesh.h">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GeneratedFiles\ui_userstudyMainWindow.h">
@@ -93,6 +165,9 @@
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_DesignWidget.h">
       <Filter>MainWindow\Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Screens\sphereDraw.h">
+      <Filter>Screens\DesignScreen\utility</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

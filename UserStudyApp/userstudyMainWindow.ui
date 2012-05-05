@@ -21,7 +21,7 @@
     <item>
      <widget class="QTabWidget" name="screens">
       <property name="currentIndex">
-       <number>3</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="WelcomeScreen">
        <attribute name="title">
@@ -259,6 +259,12 @@ QPushButton:pressed{
            <enum>QFrame::Raised</enum>
           </property>
           <layout class="QGridLayout" name="gridLayout_5">
+           <property name="margin">
+            <number>9</number>
+           </property>
+           <property name="spacing">
+            <number>6</number>
+           </property>
            <item row="2" column="1">
             <widget class="QPushButton" name="nextButtonDesign">
              <property name="minimumSize">
@@ -324,19 +330,6 @@ QPushButton:pressed{
                 <enum>QFrame::Raised</enum>
                </property>
               </widget>
-             </item>
-             <item>
-              <spacer name="verticalSpacer_6">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>20</width>
-                 <height>40</height>
-                </size>
-               </property>
-              </spacer>
              </item>
             </layout>
            </item>

@@ -1,8 +1,17 @@
 <RCC>
-    <qresource prefix="/UserStudyApp">
-        <file>logo.svg</file>
-        <file>app.ico</file>
-        <file>nextPage.ico</file>
-        <file>tutorial.mp4</file>
-    </qresource>
+  <qresource prefix="/UserStudyApp">
+    <file>toolIcons/moveIcon.png</file>
+    <file>toolIcons/rotate.png</file>
+    <file>toolIcons/scale.png</file>
+    <file>toolIcons/selectCurve.png</file>
+    <file>toolIcons/selectPrimitive.png</file>
+    <file>toolIcons/selectRegion.png</file>
+    <file>logo.svg</file>
+    <file>app.ico</file>
+    <file>toolIcons/freeDeform.png</file>
+    <file>nextPage.ico</file>
+    <file>tutorial.mp4</file>
+    <file>toolIcons/FFD.png</file>
+    <file>toolIcons/volumeFFD.png</file>
+  </qresource>
 </RCC>
