@@ -1,10 +1,14 @@
 #pragma once
 
+#include <QQueue>
+
+#include "project/GL/VBO/VBO.h"
 #include "project/GUI/Viewer/libQGLViewer/QGLViewer/qglviewer.h"
 
 using namespace qglviewer;
 class QSegMesh;
-class VBO;
+class Controller;
+class QManualDeformer;
 
 enum ViewMode { VIEW, SELECTION, MODIFY };
 enum SelectMode { SELECT_NONE, MESH, VERTEX, EDGE, FACE,
@@ -29,7 +33,7 @@ public:
 	void drawOSD();
 
 	// VBOS
-	QMap<QString, VBO*> vboCollection;
+	QMap<QString, VBO> vboCollection;
 	void updateVBOs();
 	void drawObject();
 	void drawObjectOutline();
@@ -50,15 +54,34 @@ public:
 	// Object in the scene
 	QSegMesh * activeMesh;
 	QSegMesh * activeObject();
-	void updateActiveObject();
 	bool isEmpty();
 	void setActiveObject(QSegMesh* newMesh);
 
+	Controller * ctrl();
+
+	// Deformer
+	ManipulatedFrame * activeFrame;
+	QManualDeformer * defCtrl;
+
 	void loadMesh(QString fileName);
+
+	// TEXT ON SCREEN
+	QQueue<QString> osdMessages;
+	QTimer *timer;
+
+public slots:
+	void selectPrimitiveMode();
+	void selectCurveMode();
+
+	void updateActiveObject();
+
+	void print(QString message, long age = 1000);
+	void dequeueLastMessage();
 
 private:
 	void drawCircleFade(double * color, double radius = 1.0);
-
+	void drawMessage(QString message, int x = 10, int y = 10, Vec4d backcolor = Vec4d(0,0,0,0.25));
+	void drawShadows();
 	double skyRadius;
 
 signals:

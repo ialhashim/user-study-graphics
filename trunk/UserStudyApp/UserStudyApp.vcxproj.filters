@@ -126,6 +126,183 @@
     <ClCompile Include="Screens\project\GL\GLee.c">
       <Filter>Screens\DesignScreen\project</Filter>
     </ClCompile>
+    <ClCompile Include="Screens\project\Stacker\ConcentricGroup.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Stacker\ConstraintGraph.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Stacker\Controller.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Stacker\CoplanarGroup.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Stacker\Cuboid.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Stacker\EditPath.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Stacker\GCylinder.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Stacker\Group.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Stacker\HotSpot.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Stacker\JointDetector.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Stacker\LineJointGroup.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Stacker\Numeric.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Stacker\Offset.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Stacker\PointJointGroup.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Stacker\Primitive.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Stacker\Propagator.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Stacker\QManualDeformer.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Stacker\ShapeState.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Stacker\SymmetryGroup.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GraphicsLibrary\Basic\Line.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\MathLibrary\Bounding\BoundingBox.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\MathLibrary\Bounding\Box3.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\MathLibrary\Bounding\ConvexHull2.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\MathLibrary\Bounding\ConvexHull3.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\MathLibrary\Bounding\MinOBB2.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\MathLibrary\Bounding\MinOBB3.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GraphicsLibrary\Basic\Plane.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_GCylinder.cpp">
+      <Filter>MainWindow\Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_GCylinder.cpp">
+      <Filter>MainWindow\Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GraphicsLibrary\Skeleton\ClosedPolygon.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GraphicsLibrary\Skeleton\GeneralizedCylinder.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GraphicsLibrary\Skeleton\PriorityQueue.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GraphicsLibrary\Skeleton\Skeleton.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GraphicsLibrary\Skeleton\SkeletonExtract.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GraphicsLibrary\SpacePartition\kdtree.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GraphicsLibrary\SpacePartition\Octree.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\solver\umfpack_solver\umfpack_all.cpp">
+      <Filter>Screens\DesignScreen\utility</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\MathLibrary\Deformer\FFD.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\MathLibrary\Deformer\QFFD.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\MathLibrary\Deformer\Skinning.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\MathLibrary\Deformer\VoxelDeformer.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_QFFD.cpp">
+      <Filter>MainWindow\Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_QFFD.cpp">
+      <Filter>MainWindow\Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_QControlPoint.cpp">
+      <Filter>MainWindow\Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_QControlPoint.cpp">
+      <Filter>MainWindow\Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GraphicsLibrary\Voxel\Voxeler.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_VoxelDeformer.cpp">
+      <Filter>MainWindow\Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_VoxelDeformer.cpp">
+      <Filter>MainWindow\Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\MathLibrary\Coordiantes\GCDeformation.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\Stacker\HiddenViewer.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_HiddenViewer.cpp">
+      <Filter>MainWindow\Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_HiddenViewer.cpp">
+      <Filter>MainWindow\Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_QManualDeformer.cpp">
+      <Filter>MainWindow\Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_QManualDeformer.cpp">
+      <Filter>MainWindow\Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\project\GUI\MeshBrowser\QuickMeshViewer.cpp">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_QuickMeshViewer.cpp">
+      <Filter>MainWindow\Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_QuickMeshViewer.cpp">
+      <Filter>MainWindow\Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_QuickMesh.cpp">
+      <Filter>MainWindow\Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_QuickMesh.cpp">
+      <Filter>MainWindow\Generated Files\Release</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="userstudyMainWindow.ui">
@@ -152,6 +329,30 @@
     <CustomBuild Include="Screens\project\GraphicsLibrary\Mesh\QSurfaceMesh.h">
       <Filter>Screens\DesignScreen\project</Filter>
     </CustomBuild>
+    <CustomBuild Include="Screens\project\Stacker\GCylinder.h">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Screens\project\MathLibrary\Deformer\QFFD.h">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Screens\project\MathLibrary\Deformer\QControlPoint.h">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Screens\project\MathLibrary\Deformer\VoxelDeformer.h">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Screens\project\Stacker\HiddenViewer.h">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Screens\project\Stacker\QManualDeformer.h">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Screens\project\GUI\MeshBrowser\QuickMeshViewer.h">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Screens\project\GUI\MeshBrowser\QuickMesh.h">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GeneratedFiles\ui_userstudyMainWindow.h">
@@ -171,6 +372,9 @@
     </ClInclude>
     <ClInclude Include="Screens\drawRoundRect.h">
       <Filter>Screens\DesignScreen\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Screens\project\MathLibrary\Deformer\FFD.h">
+      <Filter>Screens\DesignScreen\project</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

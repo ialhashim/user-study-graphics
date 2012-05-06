@@ -1,6 +1,9 @@
 #include "project/GraphicsLibrary/Basic/Circle.h"
 #include "project/GraphicsLibrary/Mesh/QSegMesh.h"
 #include "project/GL/VBO/VBO.h"
+#include "project/Stacker/Controller.h"
+#include "project/Stacker/Primitive.h"
+#include "project/Stacker/QManualDeformer.h"
 
 #include "MyDesigner.h"
 #define GL_MULTISAMPLE 0x809D
@@ -8,6 +11,9 @@
 #include <QKeyEvent>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFont>
+#include <QFontMetrics>
+QFontMetrics * fm;
 
 // Misc.
 #include "sphereDraw.h"
@@ -16,10 +22,18 @@
 MyDesigner::MyDesigner( QWidget * parent /*= 0*/ ) : QGLViewer(parent)
 {
 	selectMode = SELECT_NONE;
-
 	skyRadius = 1.0;
-
 	activeMesh = NULL;
+	fm = new QFontMetrics(QFont());
+
+	connect(this, SIGNAL(objectInserted()), SLOT(updateGL()));
+
+	activeFrame = new ManipulatedFrame();
+	setManipulatedFrame(activeFrame);
+
+	// TEXT ON SCREEN
+	timer = new QTimer(this);
+	connect(timer, SIGNAL(timeout()), SLOT(dequeueLastMessage()));
 }
 
 void MyDesigner::init()
@@ -83,16 +97,40 @@ void MyDesigner::preDraw()
 	// Draw fancy effects:
 	drawSolidSphere(skyRadius,30,30, true, true); // Sky dome
 	beginUnderMesh();
-	drawCircleFade(Vec4d(0,0,0,0.3), 4); // Floor
 	if(!isEmpty()){
 		double r = 0.75 * Max(activeMesh->bbmax.x() - activeMesh->bbmin.x(),
 			activeMesh->bbmax.y() - activeMesh->bbmin.y());
 		glClear(GL_DEPTH_BUFFER_BIT);
-		drawCircleFade(Vec4d(0,0,0,0.4), r); // Shadow
+		drawShadows();
 	}
+	drawCircleFade(Vec4d(0,0,0,0.25), 4); // Floor
 	endUnderMesh();
 	glClear(GL_DEPTH_BUFFER_BIT);
-	Q_EMIT drawNeeded();
+}
+
+void MyDesigner::drawShadows()
+{
+	double objectHeight = activeMesh->bbmax.z() - activeMesh->bbmin.z();
+
+	glDisable(GL_DEPTH_TEST);
+	/* Draw shadows */
+	QMapIterator<QString, VBO> i(vboCollection);
+	while (i.hasNext()) {
+		i.next();
+
+		QSurfaceMesh * mesh = activeMesh->getSegment(i.key());
+		double scaleX = (mesh->bbmax.x() - mesh->bbmin.x());
+		double scaleY = (mesh->bbmax.y() - mesh->bbmin.y());
+		double z = mesh->center.z() - (0.5*(mesh->bbmax.z() - mesh->bbmin.z()));
+
+		glPushMatrix();
+		glTranslated(mesh->center.x(), mesh->center.y(), 0.01);
+		glScaled(scaleX, scaleY, 1.0);
+		double opacity = 0.5 * (1 - ((z + (objectHeight*0.5)) / objectHeight));
+		drawCircleFade(Vec4d(0,0,0,Max(0,Min(1,opacity))), 1); // Shadow
+		glPopMatrix();
+	}
+	glEnable(GL_DEPTH_TEST);
 }
 
 void MyDesigner::draw()
@@ -101,8 +139,12 @@ void MyDesigner::draw()
 	if (isEmpty()) return;
 
 	// The main object
-	drawObject(); 
+	drawObject();
 
+	// Draw controller and primitives
+	if(ctrl() && (selectMode == CONTROLLER || selectMode == CONTROLLER_ELEMENT)) 
+		ctrl()->draw();
+	
 	// Draw debug geometries
 	activeObject()->drawDebug();
 }
@@ -122,8 +164,8 @@ void MyDesigner::drawObject()
 		glCullFace (GL_BACK);
 
 		/* Draw solid object */
-		for (QMap<QString, VBO*>::iterator i = vboCollection.begin(); i != vboCollection.end(); ++i)
-			(*i)->render();
+		for (QMap<QString, VBO>::iterator i = vboCollection.begin(); i != vboCollection.end(); ++i)
+			i->render();
 
 		/* GL_POLYGON_BIT */
 		glPopAttrib ();
@@ -149,8 +191,8 @@ void MyDesigner::drawObjectOutline()
 
 	/* Draw wire object */
 	glColor3f (0.0f, 0.0f, 0.0f);
-	for (QMap<QString, VBO*>::iterator i = vboCollection.begin(); i != vboCollection.end(); ++i)
-		(*i)->render_depth();
+	for (QMap<QString, VBO>::iterator i = vboCollection.begin(); i != vboCollection.end(); ++i)
+		i->render_depth();
 	
 	/* GL_LIGHTING_BIT | GL_LINE_BIT | GL_DEPTH_BUFFER_BIT */
 	glPopAttrib ();
@@ -185,24 +227,62 @@ void MyDesigner::drawOSD()
 	selectModeTxt << "None" << "Mesh" << "Vertex" << "Edge" 
 		<< "Face" << "Primitive" << "Curve" << "FFD" << "Voxel";
 
+	int paddingX = 15, paddingY = 5;
+
+	int pixelsHigh = fm->height();
+	int lineNum = 0;
+
+	#define padY(l) paddingX, paddingY + (l++ * pixelsHigh*2.5) + (pixelsHigh * 3)
+
 	/* Mode text */
+	drawMessage("Select mode: " + selectModeTxt[this->selectMode], padY(lineNum));
+	
+	if(selectMode == CONTROLLER || selectMode == CONTROLLER_ELEMENT)
+	{
+		QString primId = "None";
+		if(ctrl()->getSelectedPrimitive())
+			primId = ctrl()->getSelectedPrimitive()->id;
+		drawMessage("Primitive - " + primId, padY(lineNum), Vec4d(1.0,1.0,0,0.25));
+	}
+
+	if(selectMode == CONTROLLER_ELEMENT && ctrl()->getSelectedPrimitive())
+	{
+		QString curveId = "None";
+		if(ctrl()->getSelectedPrimitive()->selectedCurveId >= 0)
+			curveId = QString::number(ctrl()->getSelectedPrimitive()->selectedCurveId);
+		drawMessage("Curve - " + curveId, padY(lineNum), Vec4d(0,1.0,0,0.25));
+	}
+
+	// Textual log messages
+	for(int i = 0; i < osdMessages.size(); i++){
+		int margin = 20; //px
+		int x = margin;
+		int y = (i * QFont().pointSize() * 1.5f) + margin;
+
+		qglColor(Qt::white);
+		renderText(x, y, osdMessages.at(i));
+	}
+}
+
+void MyDesigner::drawMessage(QString message, int x, int y, Vec4d backcolor)
+{
+	int pixelsWide = fm->width(message);
+	int pixelsHigh = fm->height() * 1.5;
+
+	int margin = 20;
+
 	this->startScreenCoordinatesSystem();
 	glEnable(GL_BLEND);
-	glColor4dv(Vec4d(0,0,0,0.25));
-	drawRoundRect(50,50,100,100);
+	drawRoundRect(x, y,pixelsWide + margin, pixelsHigh * 1.5, backcolor, 5);
 	this->stopScreenCoordinatesSystem();
 
 	glColor4dv(Vec4d(1,1,1,1));
-	drawText(15,15, "Select mode: " + selectModeTxt[selectMode]);
-
-	QFontMetrics fm(font);
-	int pixelsWide = fm.width("What's the width of this text?");
-	int pixelsHigh = fm.height();
+	drawText( x + margin * 0.5, y - (pixelsHigh * 0.5), message);
 }
 
 void MyDesigner::drawCircleFade(double * color, double radius)
 {
-	glDisable(GL_LIGHTING);
+	//glDisable(GL_LIGHTING);
 	Circle c(Vec3d(0,0,0), Vec3d(0,0,1), radius);
 	std::vector<Point> pnts = c.getPoints();
 	glBegin(GL_TRIANGLE_FAN);
@@ -211,7 +291,7 @@ void MyDesigner::drawCircleFade(double * color, double radius)
 	foreach(Point p, c.getPoints())	glVertex3dv(p); 
 	glVertex3dv(c.getPoints().front());
 	glEnd();
-	glEnable(GL_LIGHTING);
+	//glEnable(GL_LIGHTING);
 }
 
 void MyDesigner::updateVBOs()
@@ -234,7 +314,7 @@ void MyDesigner::updateVBOs()
 				seg->fillTrianglesList();
 
 				// Create VBO 
-				vboCollection[objId] = new VBO( seg->n_vertices(), points.data(), vnormals.data(), vcolors.data(), seg->triangles );		
+				vboCollection[objId] = VBO( seg->n_vertices(), points.data(), vnormals.data(), vcolors.data(), seg->triangles );		
 			}
 		}
 	}
@@ -242,10 +322,7 @@ void MyDesigner::updateVBOs()
 
 void MyDesigner::updateActiveObject()
 {
-	foreach(VBO* vbo, vboCollection) delete vbo;
-
 	vboCollection.clear();
-	updateGL();
 }
 
 QSegMesh * MyDesigner::activeObject()
@@ -273,7 +350,6 @@ void MyDesigner::setActiveObject(QSegMesh* newMesh)
 
 	// Setup the new object
 	activeMesh = newMesh;
-	activeMesh->ptr["controller"] = NULL;
 
 	// Change title of scene
 	setWindowTitle(activeMesh->objectName());
@@ -303,6 +379,19 @@ void MyDesigner::loadMesh( QString fileName )
 	// Set global ID for the mesh and all its segments
 	loadedMesh->setObjectName(newObjId);
 
+	// Load controller
+	loadedMesh->ptr["controller"] = new Controller(loadedMesh);
+	Controller * ctrl = (Controller *)loadedMesh->ptr["controller"];
+
+	// Setup controller file name
+	fileName.chop(3);fileName += ".ctrl";
+
+	if(QFileInfo(fileName).exists())
+	{
+		std::ifstream inF(qPrintable(fileName), std::ios::in);
+		ctrl->load(inF);
+	}
+
 	setActiveObject(loadedMesh);
 }
 
@@ -323,7 +412,20 @@ void MyDesigner::mouseMoveEvent( QMouseEvent* e )
 
 void MyDesigner::wheelEvent( QWheelEvent* e )
 {
-	QGLViewer::wheelEvent(e);
+	if(selectMode != CONTROLLER_ELEMENT)
+		QGLViewer::wheelEvent(e);
+
+	switch (selectMode)
+	{
+	case CONTROLLER_ELEMENT:
+		{
+			if(!defCtrl) break;
+
+			double s = 0.1 * (e->delta() / 120.0);
+			defCtrl->scaleUp(1 + s);
+		}
+		break;
+	}
 }
 
 void MyDesigner::keyPressEvent( QKeyEvent *e )
@@ -353,15 +455,120 @@ void MyDesigner::endUnderMesh()
 
 void MyDesigner::drawWithNames()
 {
+	if(!ctrl()) return;
 
+	if(selectMode == CONTROLLER) ctrl()->drawNames(false);
+	if(selectMode == CONTROLLER_ELEMENT) ctrl()->drawNames(true);
 }
 
 void MyDesigner::postSelection( const QPoint& point )
 {
+	int selected = selectedName();
 
+	// General selection
+	if(selected == -1)
+		selection.clear();
+	else
+	{
+		if(selection.contains( selected ))
+			selection.remove(selection.indexOf(selected));
+		else
+		{
+			selection.push_back(selected); // to start from 0
+
+			if (selectMode == CONTROLLER)
+				print( QString("Selected primitive: %1").arg( qPrintable(ctrl()->getPrimitive(selected)->id) ) );
+
+			if (selectMode == CONTROLLER_ELEMENT)
+				print( QString("Selected curve: %1").arg( selected ) );
+		}
+	}
+
+	// Selection mode cases
+	Controller * c = ctrl();
+	switch (selectMode)
+	{
+	case CONTROLLER:
+		if (!isEmpty() && c)
+		{
+			c->selectPrimitive(selected);
+
+			if(selected != -1)
+			{
+				defCtrl = new QManualDeformer(c);
+				this->connect(defCtrl, SIGNAL(objectModified()), SLOT(updateActiveObject()));
+				//this->connect(defCtrl, SIGNAL(objectModified()), sp, SLOT(updateActiveObject()));
+
+				emit(objectInserted());
+
+				setManipulatedFrame( defCtrl->getFrame() );
+				Vec3d q = c->getSelectedCurveCenter();
+				manipulatedFrame()->setPosition( Vec(q.x(), q.y(), q.z()) );
+			}
+		}
+		break;
+
+	case CONTROLLER_ELEMENT:
+		if (!isEmpty() && c)
+		{
+			if(c->selectPrimitiveCurve(selected))
+			{
+				defCtrl = new QManualDeformer(c);
+				this->connect(defCtrl, SIGNAL(objectModified()), SLOT(updateActiveObject()));
+				//this->connect(defCtrl, SIGNAL(objectModified()), sp, SLOT(updateActiveObject()));
+
+				emit(objectInserted());
+
+				setManipulatedFrame( defCtrl->getFrame() );
+				Vec3d q = c->getSelectedCurveCenter();
+				manipulatedFrame()->setPosition( Vec(q.x(), q.y(), q.z()) );
+			}
+
+			if(selected == -1)
+			{
+				setSelectMode(CONTROLLER);
+				setManipulatedFrame( activeFrame );
+				c->selectPrimitive(selected);
+			}
+		}
+		break;
+	}
 }
 
 void MyDesigner::setSelectMode( SelectMode toMode )
 {
 	this->selectMode = toMode;
+}
+
+Controller * MyDesigner::ctrl()
+{
+	if(!activeObject()) return NULL;
+	return (Controller *) activeObject()->ptr["controller"];
+}
+
+void MyDesigner::selectPrimitiveMode()
+{
+	setSelectMode(CONTROLLER);
+	updateGL();
+}
+
+void MyDesigner::selectCurveMode()
+{
+	setSelectMode(CONTROLLER_ELEMENT);
+	updateGL();
+}
+
+void MyDesigner::print( QString message, long age )
+{
+	osdMessages.enqueue(message);
+	timer->start(age);
+	updateGL();
+}
+
+void MyDesigner::dequeueLastMessage()
+{
+	if(!osdMessages.isEmpty()){
+		osdMessages.dequeue();
+		updateGL();
+	}
 }

@@ -92,7 +92,7 @@ void drawSolidSphere(double radius, int slices, int stacks, bool half = false, b
 
     glEnd();
 
-	double s = 1.4;
+	double s = 2.0;
 
     /* Cover each stack with a quad strip, except the top and bottom stacks */
     for( i=1; i<stacks-1; i++ )
