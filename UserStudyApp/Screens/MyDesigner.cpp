@@ -22,6 +22,7 @@ QFontMetrics * fm;
 MyDesigner::MyDesigner( QWidget * parent /*= 0*/ ) : QGLViewer(parent)
 {
 	selectMode = SELECT_NONE;
+	transformMode = NONE_MODE;
 	skyRadius = 1.0;
 	activeMesh = NULL;
 	fm = new QFontMetrics(QFont());
@@ -147,6 +148,73 @@ void MyDesigner::draw()
 	
 	// Draw debug geometries
 	activeObject()->drawDebug();
+
+	drawTool();
+}
+
+void MyDesigner::drawTool()
+{
+	if(!selection.size()) return;
+
+	double toolScale = 0.3;
+
+	switch(transformMode){
+	case NONE_MODE: break;
+	case TRANSLATE_MODE: 
+		{
+			glPushMatrix();
+			glMultMatrixd(manipulatedFrame()->matrix());
+			glColor3f(1,1,0);
+			drawAxis(toolScale);
+			glPopMatrix();
+			break;
+		}
+	case ROTATE_MODE:
+		{
+			glDisable(GL_LIGHTING);
+			glPushMatrix();
+			glMultMatrixd(manipulatedFrame()->matrix());
+
+			Circle c(Vec3d(0,0,0), Vec3d(0,0,1),toolScale);
+			c.draw(1,Vec4d(1,1,0,1)); c.draw(3,Vec4d(0,0,0,1));
+			glRotated(90,0,1,0);
+			c.draw(1,Vec4d(1,1,0,1)); c.draw(3,Vec4d(0,0,0,1));
+			glRotated(90,1,0,0);
+			c.draw(1,Vec4d(1,1,0,1)); c.draw(3,Vec4d(0,0,0,1));
+			
+			glDisable(GL_DEPTH_TEST);
+			glColor4d(1,1,0,0.1);
+			drawSolidSphere(toolScale, 20,20);
+			glEnable(GL_DEPTH_TEST);
+
+			glPopMatrix();
+			glEnable(GL_LIGHTING);
+			break;
+		}
+	case SCALE_MODE:
+		{
+			glDisable(GL_LIGHTING);
+			glPushMatrix();
+			glMultMatrixd(manipulatedFrame()->matrix());
+
+			Circle c1(Vec3d(0,0,0), Vec3d(0,0,1),toolScale, 4);
+			glPushMatrix();glRotated(45,0,0,1);
+			c1.drawFilled(Vec4d(1,1,0,0.2), 2, Vec4d(0,0,0,1));
+			glPopMatrix();
+			Circle c2(Vec3d(0,0,0), Vec3d(0,1,0),toolScale, 4);
+			glPushMatrix();glRotated(45,0,1,0);
+			c2.drawFilled(Vec4d(1,1,0,0.2), 2, Vec4d(0,0,0,1));
+			glPopMatrix();
+			Circle c3(Vec3d(0,0,0), Vec3d(1,0,0),toolScale, 4);
+			glPushMatrix();glRotated(45,1,0,0);
+			c3.drawFilled(Vec4d(1,1,0,0.2), 2, Vec4d(0,0,0,1));
+			glPopMatrix();
+
+			glPopMatrix();
+			glEnable(GL_LIGHTING);
+			break;
+		}
+	}
 }
 
 void MyDesigner::drawObject()
@@ -368,6 +436,8 @@ void MyDesigner::loadMesh( QString fileName )
 {
 	if(fileName.isEmpty() || !QFileInfo(fileName).exists()) return;
 
+	selection.clear();
+
 	QString newObjId = QFileInfo(fileName).fileName();
 	newObjId.chop(4);
 
@@ -533,6 +603,8 @@ void MyDesigner::postSelection( const QPoint& point )
 		}
 		break;
 	}
+
+	updateGL();
 }
 
 void MyDesigner::setSelectMode( SelectMode toMode )
@@ -555,6 +627,29 @@ void MyDesigner::selectPrimitiveMode()
 void MyDesigner::selectCurveMode()
 {
 	setSelectMode(CONTROLLER_ELEMENT);
+	updateGL();
+}
+
+void MyDesigner::selectMultiMode()
+{
+
+}
+
+void MyDesigner::moveMode()
+{
+	transformMode = TRANSLATE_MODE;
+	updateGL();
+}
+
+void MyDesigner::rotateMode()
+{
+	transformMode = ROTATE_MODE;
+	updateGL();
+}
+
+void MyDesigner::scaleMode()
+{
+	transformMode = SCALE_MODE;
 	updateGL();
 }
 

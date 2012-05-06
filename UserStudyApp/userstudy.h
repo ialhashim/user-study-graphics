@@ -33,6 +33,8 @@ public slots:
 	QWidget * getScreen(SCREENS screenIndex);
 	void setScreen( SCREENS screenIndex );
 
+	void clearLayoutItems(QLayout * layout);
+
 private:
 	Ui::UserStudyAppClass ui;
 
