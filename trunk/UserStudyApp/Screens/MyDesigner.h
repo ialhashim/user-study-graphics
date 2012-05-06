@@ -13,6 +13,7 @@ class QManualDeformer;
 enum ViewMode { VIEW, SELECTION, MODIFY };
 enum SelectMode { SELECT_NONE, MESH, VERTEX, EDGE, FACE,
 	CONTROLLER, CONTROLLER_ELEMENT, FFD_DEFORMER, VOXEL_DEFORMER };
+enum TransformMode { NONE_MODE, TRANSLATE_MODE, ROTATE_MODE, SCALE_MODE };
 
 class MyDesigner : public QGLViewer{
 	Q_OBJECT
@@ -51,6 +52,9 @@ public:
 	void setSelectMode(SelectMode toMode);	
 	void postSelection(const QPoint& point);
 
+	// Tool mode
+	TransformMode transformMode;
+
 	// Object in the scene
 	QSegMesh * activeMesh;
 	QSegMesh * activeObject();
@@ -70,8 +74,17 @@ public:
 	QTimer *timer;
 
 public slots:
+	
+	// Select buttons
 	void selectPrimitiveMode();
 	void selectCurveMode();
+	void selectMultiMode();
+
+	// Transform buttons
+	void moveMode();
+	void rotateMode();
+	void scaleMode();
+	void drawTool();
 
 	void updateActiveObject();
 
