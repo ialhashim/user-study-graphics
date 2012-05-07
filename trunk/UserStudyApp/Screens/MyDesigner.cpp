@@ -25,6 +25,7 @@ MyDesigner::MyDesigner( QWidget * parent /*= 0*/ ) : QGLViewer(parent)
 	transformMode = NONE_MODE;
 	skyRadius = 1.0;
 	activeMesh = NULL;
+	isMousePressed = false;
 	fm = new QFontMetrics(QFont());
 
 	connect(this, SIGNAL(objectInserted()), SLOT(updateGL()));
@@ -149,7 +150,7 @@ void MyDesigner::draw()
 	// Draw debug geometries
 	activeObject()->drawDebug();
 
-	drawTool();
+	drawDebug();
 }
 
 void MyDesigner::drawTool()
@@ -215,6 +216,28 @@ void MyDesigner::drawTool()
 			break;
 		}
 	}
+}
+
+void MyDesigner::drawDebug()
+{
+	glDisable(GL_LIGHTING);
+	
+	// DEBUG: Draw designer debug
+	glBegin(GL_POINTS);
+		glColor4dv(Vec4d(1,0,0,1));
+		foreach(Vec p, debugPoints) glVertex3dv(p);
+	glEnd();
+
+	glBegin(GL_LINES);
+	glColor4dv(Vec4d(0,0,1,1));
+	for(std::vector< std::pair<Vec,Vec> >::iterator 
+		line = debugLines.begin(); line != debugLines.end(); line++)
+	{glVertex3dv(line->first); glVertex3dv(line->second);}
+	glEnd();
+
+	foreach(Plane p, debugPlanes) p.draw();
+
+	glEnable(GL_LIGHTING);
 }
 
 void MyDesigner::drawObject()
@@ -283,6 +306,9 @@ void MyDesigner::postDraw()
 
 	endUnderMesh();
 
+	glClear(GL_DEPTH_BUFFER_BIT);
+	drawTool();
+
 	// Revolve Around Point, line when camera rolls, zoom region
 	drawVisualHints();
 
@@ -291,9 +317,10 @@ void MyDesigner::postDraw()
 
 void MyDesigner::drawOSD()
 {
-	QStringList selectModeTxt;
-	selectModeTxt << "None" << "Mesh" << "Vertex" << "Edge" 
+	QStringList selectModeTxt, toolModeTxt;
+	selectModeTxt << "Camera" << "Mesh" << "Vertex" << "Edge" 
 		<< "Face" << "Primitive" << "Curve" << "FFD" << "Voxel";
+	toolModeTxt << "None" << "Move" << "Rotate" << "Scale";
 
 	int paddingX = 15, paddingY = 5;
 
@@ -305,6 +332,11 @@ void MyDesigner::drawOSD()
 	/* Mode text */
 	drawMessage("Select mode: " + selectModeTxt[this->selectMode], padY(lineNum));
 	
+	if(transformMode != NONE_MODE)
+	{
+		drawMessage("Tool: " + toolModeTxt[transformMode], padY(lineNum), Vec4d(1.0,1.0,0,0.25));
+	}
+
 	if(selectMode == CONTROLLER || selectMode == CONTROLLER_ELEMENT)
 	{
 		QString primId = "None";
@@ -468,11 +500,21 @@ void MyDesigner::loadMesh( QString fileName )
 void MyDesigner::mousePressEvent( QMouseEvent* e )
 {
 	QGLViewer::mousePressEvent(e);
+
+	if(!isMousePressed)
+	{
+		this->startMousePos2D = e->pos();
+		camera()->convertClickToLine(e->pos(), startMouseOrigin, startMouseDir);
+	}
+
+	isMousePressed = true;
 }
 
 void MyDesigner::mouseReleaseEvent( QMouseEvent* e )
 {
 	QGLViewer::mouseReleaseEvent(e);
+
+	isMousePressed = false;
 }
 
 void MyDesigner::mouseMoveEvent( QMouseEvent* e )
@@ -543,68 +585,74 @@ void MyDesigner::postSelection( const QPoint& point )
 		if(selection.contains( selected ))
 			selection.remove(selection.indexOf(selected));
 		else
-		{
 			selection.push_back(selected); // to start from 0
-
-			if (selectMode == CONTROLLER)
-				print( QString("Selected primitive: %1").arg( qPrintable(ctrl()->getPrimitive(selected)->id) ) );
-
-			if (selectMode == CONTROLLER_ELEMENT)
-				print( QString("Selected curve: %1").arg( selected ) );
-		}
 	}
 
 	// Selection mode cases
-	Controller * c = ctrl();
 	switch (selectMode)
 	{
 	case CONTROLLER:
-		if (!isEmpty() && c)
-		{
-			c->selectPrimitive(selected);
-
-			if(selected != -1)
-			{
-				defCtrl = new QManualDeformer(c);
-				this->connect(defCtrl, SIGNAL(objectModified()), SLOT(updateActiveObject()));
-				//this->connect(defCtrl, SIGNAL(objectModified()), sp, SLOT(updateActiveObject()));
-
-				emit(objectInserted());
-
-				setManipulatedFrame( defCtrl->getFrame() );
-				Vec3d q = c->getSelectedCurveCenter();
-				manipulatedFrame()->setPosition( Vec(q.x(), q.y(), q.z()) );
-			}
-		}
+		transformPrimitive();
 		break;
 
 	case CONTROLLER_ELEMENT:
-		if (!isEmpty() && c)
-		{
-			if(c->selectPrimitiveCurve(selected))
-			{
-				defCtrl = new QManualDeformer(c);
-				this->connect(defCtrl, SIGNAL(objectModified()), SLOT(updateActiveObject()));
-				//this->connect(defCtrl, SIGNAL(objectModified()), sp, SLOT(updateActiveObject()));
-
-				emit(objectInserted());
-
-				setManipulatedFrame( defCtrl->getFrame() );
-				Vec3d q = c->getSelectedCurveCenter();
-				manipulatedFrame()->setPosition( Vec(q.x(), q.y(), q.z()) );
-			}
-
-			if(selected == -1)
-			{
-				setSelectMode(CONTROLLER);
-				setManipulatedFrame( activeFrame );
-				c->selectPrimitive(selected);
-			}
-		}
+		transformCurve();
 		break;
 	}
 
 	updateGL();
+}
+
+void MyDesigner::transformPrimitive(bool modifySelect)
+{
+	Controller * c = ctrl();
+
+	if(modifySelect)
+	{
+		int selected = selectedName();
+		c->selectPrimitive(selected);
+		if(selected == -1) 
+		{
+			transformMode = NONE_MODE;
+			selectMode = SELECT_NONE;
+			setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, SELECT);
+			setMouseBinding(Qt::LeftButton, CAMERA, ROTATE);
+			return;
+		}
+	}
+
+	if(!selection.isEmpty())
+	{
+		defCtrl = new QManualDeformer(c);
+		this->connect(defCtrl, SIGNAL(objectModified()), SLOT(updateActiveObject()));
+		//this->connect(defCtrl, SIGNAL(objectModified()), sp, SLOT(updateActiveObject()));
+
+		emit(objectInserted());
+
+		setManipulatedFrame( defCtrl->getFrame() );
+		Vec3d q = c->getSelectedPrimitive()->centerPoint();
+		manipulatedFrame()->setPosition( Vec(q.x(), q.y(), q.z()) );
+	}
+}
+
+void MyDesigner::transformCurve(bool modifySelect)
+{
+	Controller * c = ctrl();
+	
+	int selected = selectedName();
+
+	if(modifySelect)
+		if(!c->selectPrimitiveCurve(selected)) return;
+	
+	defCtrl = new QManualDeformer(c);
+	this->connect(defCtrl, SIGNAL(objectModified()), SLOT(updateActiveObject()));
+	//this->connect(defCtrl, SIGNAL(objectModified()), sp, SLOT(updateActiveObject()));
+
+	emit(objectInserted());
+
+	setManipulatedFrame( defCtrl->getFrame() );
+	Vec3d q = c->getSelectedCurveCenter();
+	manipulatedFrame()->setPosition( Vec(q.x(), q.y(), q.z()) );
 }
 
 void MyDesigner::setSelectMode( SelectMode toMode )
@@ -620,12 +668,24 @@ Controller * MyDesigner::ctrl()
 
 void MyDesigner::selectPrimitiveMode()
 {
+	setMouseBinding(Qt::LeftButton, SELECT);
+	setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, CAMERA, ROTATE);
+
+	// clear existing selection of curves
+	Controller * c = ctrl();
+	if(c && c->getSelectedPrimitive()) c->getSelectedPrimitive()->selectedCurveId = -1;
+
+	transformMode = NONE_MODE;
 	setSelectMode(CONTROLLER);
 	updateGL();
 }
 
 void MyDesigner::selectCurveMode()
 {
+	setMouseBinding(Qt::LeftButton, SELECT);
+	setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, CAMERA, ROTATE);
+
+	transformMode = NONE_MODE;
 	setSelectMode(CONTROLLER_ELEMENT);
 	updateGL();
 }
@@ -637,20 +697,43 @@ void MyDesigner::selectMultiMode()
 
 void MyDesigner::moveMode()
 {
+	setMouseBinding(Qt::LeftButton, FRAME, TRANSLATE);
+	setMouseBinding(Qt::ControlModifier | Qt::LeftButton, SELECT);
+	setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, CAMERA, ROTATE);
+
 	transformMode = TRANSLATE_MODE;
+	toolMode();
 	updateGL();
 }
 
 void MyDesigner::rotateMode()
 {
+	setMouseBinding(Qt::LeftButton, FRAME, ROTATE);
+	setMouseBinding(Qt::ControlModifier | Qt::LeftButton, SELECT);
+	setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, CAMERA, ROTATE);
+
 	transformMode = ROTATE_MODE;
+	toolMode();
 	updateGL();
 }
 
 void MyDesigner::scaleMode()
 {
+	//setMouseBinding(Qt::LeftButton, FRAME, TRANSLATE);
+	//setMouseBinding(Qt::ControlModifier | Qt::LeftButton, SELECT);
+	//setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, CAMERA, ROTATE);
+
 	transformMode = SCALE_MODE;
+	toolMode();
 	updateGL();
+}
+
+void MyDesigner::toolMode()
+{
+	if(selectMode == CONTROLLER) transformPrimitive(false);
+	if(selectMode == CONTROLLER_ELEMENT) transformCurve(false);
+
+	setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, SELECT);
 }
 
 void MyDesigner::print( QString message, long age )
