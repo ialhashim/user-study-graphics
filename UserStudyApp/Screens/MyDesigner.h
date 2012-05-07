@@ -2,6 +2,7 @@
 
 #include <QQueue>
 
+#include "project/GraphicsLibrary/Basic/Plane.h"
 #include "project/GL/VBO/VBO.h"
 #include "project/GUI/Viewer/libQGLViewer/QGLViewer/qglviewer.h"
 
@@ -73,6 +74,12 @@ public:
 	QQueue<QString> osdMessages;
 	QTimer *timer;
 
+	// Mouse state
+	bool isMousePressed;
+	QPoint startMousePos2D;
+	Vec startMouseOrigin;
+	Vec startMouseDir;
+
 public slots:
 	
 	// Select buttons
@@ -92,10 +99,21 @@ public slots:
 	void dequeueLastMessage();
 
 private:
+	// DEBUG:
+	std::vector<Vec> debugPoints;
+	std::vector< std::pair<Vec,Vec> > debugLines;
+	std::vector< Plane > debugPlanes;
+	void drawDebug();
+
+private:
 	void drawCircleFade(double * color, double radius = 1.0);
 	void drawMessage(QString message, int x = 10, int y = 10, Vec4d backcolor = Vec4d(0,0,0,0.25));
 	void drawShadows();
 	double skyRadius;
+
+	void transformPrimitive(bool modifySelect = true);
+	void transformCurve(bool modifySelect = true);
+	void toolMode();
 
 signals:
 	void objectInserted();
