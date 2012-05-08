@@ -4,6 +4,8 @@
 #include "project/Stacker/Controller.h"
 #include "project/Stacker/Primitive.h"
 #include "project/Stacker/QManualDeformer.h"
+#include "project/MathLibrary/Deformer/QFFD.h"
+#include "project/MathLibrary/Deformer/VoxelDeformer.h"
 #include "project/Utility/SimpleDraw.h"
 
 #include "MyDesigner.h"
@@ -25,6 +27,9 @@ QFontMetrics * fm;
 MyDesigner::MyDesigner( QWidget * parent /*= 0*/ ) : QGLViewer(parent)
 {
 	defCtrl = NULL;
+	activeDeformer = NULL;
+	activeVoxelDeformer = NULL;
+
 	selectMode = SELECT_NONE;
 	transformMode = NONE_MODE;
 	skyRadius = 1.0;
@@ -153,6 +158,10 @@ void MyDesigner::draw()
 	if(ctrl() && (selectMode == CONTROLLER || selectMode == CONTROLLER_ELEMENT)) 
 		ctrl()->draw();
 	
+	// deformers
+	if(activeDeformer) activeDeformer->draw();
+	if(activeVoxelDeformer) activeVoxelDeformer->draw();
+
 	// Draw debug geometries
 	activeObject()->drawDebug();
 
@@ -832,6 +841,9 @@ void MyDesigner::endUnderMesh()
 
 void MyDesigner::drawWithNames()
 {
+	if(activeDeformer) activeDeformer->drawNames();
+	if(activeVoxelDeformer) activeVoxelDeformer->drawNames();
+
 	if(!ctrl()) return;
 
 	if(selectMode == CONTROLLER) ctrl()->drawNames(false);
@@ -851,6 +863,25 @@ void MyDesigner::postSelection( const QPoint& point )
 			selection.remove(selection.indexOf(selected));
 		else
 			selection.push_back(selected); // to start from 0
+	}
+
+	// FFD and such deformers
+	if(activeDeformer && selectMode == FFD_DEFORMER){
+		activeDeformer->postSelection(selected);
+
+		if(selected >= 0)
+			setManipulatedFrame( activeDeformer->getQControlPoint(selected) );
+		else
+			setManipulatedFrame( activeFrame );
+	}
+
+	if(activeVoxelDeformer && selectMode == VOXEL_DEFORMER){
+		if(selected >= 0)
+			setManipulatedFrame( activeVoxelDeformer->getQControlPoint(selected) );
+		else
+			setManipulatedFrame( activeFrame );
+
+		activeVoxelDeformer->select(selected);
 	}
 
 	// Selection mode cases
@@ -967,6 +998,9 @@ void MyDesigner::selectMultiMode()
 
 void MyDesigner::selectTool()
 {
+	activeDeformer = NULL;
+	activeVoxelDeformer = NULL;
+
 	clearButtons();
 	if(selectMode == CONTROLLER) designWidget->selectPrimitiveButton->setChecked(true);
 	if(selectMode == CONTROLLER_ELEMENT) designWidget->selectCurveButton->setChecked(true);
@@ -998,6 +1032,9 @@ void MyDesigner::scaleMode()
 
 void MyDesigner::toolMode()
 {
+	activeDeformer = NULL;
+	activeVoxelDeformer = NULL;
+
 	setMouseBinding(Qt::ControlModifier | Qt::LeftButton, SELECT);
 	setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, CAMERA, ROTATE);
 
@@ -1057,4 +1094,35 @@ void MyDesigner::dequeueLastMessage()
 		osdMessages.dequeue();
 		updateGL();
 	}
+}
+
+void MyDesigner::setActiveFFDDeformer()
+{
+	activeVoxelDeformer = NULL;
+
+	Primitive * prim = ctrl()->getSelectedPrimitive(); if(!prim) return;
+	QSurfaceMesh* mesh = prim->m_mesh;
+
+	int nx = 2, ny = 2, nz = 2;
+
+	activeDeformer = new QFFD(mesh, BoundingBoxFFD, Vec3i(nx,ny,nz));
+	connect(activeDeformer, SIGNAL(meshDeformed()), this, SLOT(updateActiveObject()));
+
+	updateGL();
+	this->setSelectMode(FFD_DEFORMER);
+}
+
+void MyDesigner::setActiveVoxelDeformer()
+{
+	activeDeformer = NULL;
+
+	Primitive * prim = ctrl()->getSelectedPrimitive(); if(!prim) return;
+	QSurfaceMesh* mesh = prim->m_mesh;
+
+	activeVoxelDeformer = new VoxelDeformer(mesh, 0.2);
+
+	this->connect(activeVoxelDeformer, SIGNAL(meshDeformed()), this, SLOT(updateActiveObject()));
+
+	updateGL();
+	this->setSelectMode(VOXEL_DEFORMER);
 }
