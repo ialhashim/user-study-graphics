@@ -10,6 +10,7 @@ using namespace qglviewer;
 class QSegMesh;
 class Controller;
 class QManualDeformer;
+#include "ui_DesignWidget.h"
 
 enum ViewMode { VIEW, SELECTION, MODIFY };
 enum SelectMode { SELECT_NONE, MESH, VERTEX, EDGE, FACE,
@@ -77,8 +78,16 @@ public:
 	// Mouse state
 	bool isMousePressed;
 	QPoint startMousePos2D;
-	Vec startMouseOrigin;
-	Vec startMouseDir;
+	QPoint currMousePos2D;
+	Vec startMouseOrigin, currMouseOrigin;
+	Vec startMouseDir, currMouseDir;
+
+	// For scale tool
+	Vec3d startScalePos, currScalePos;
+	Vec3d scaleDelta; // for visualization
+
+	// Hack
+	Ui::DesignWidget * designWidget;
 
 public slots:
 	
@@ -109,11 +118,15 @@ private:
 	void drawCircleFade(double * color, double radius = 1.0);
 	void drawMessage(QString message, int x = 10, int y = 10, Vec4d backcolor = Vec4d(0,0,0,0.25));
 	void drawShadows();
+	void drawViewChanger();
 	double skyRadius;
 
 	void transformPrimitive(bool modifySelect = true);
 	void transformCurve(bool modifySelect = true);
+
 	void toolMode();
+	void selectTool();
+	void clearButtons();
 
 signals:
 	void objectInserted();
