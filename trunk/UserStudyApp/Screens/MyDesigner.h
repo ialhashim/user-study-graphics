@@ -10,6 +10,8 @@ using namespace qglviewer;
 class QSegMesh;
 class Controller;
 class QManualDeformer;
+class QFFD;
+class VoxelDeformer;
 #include "ui_DesignWidget.h"
 
 enum ViewMode { VIEW, SELECTION, MODIFY };
@@ -68,6 +70,8 @@ public:
 	// Deformer
 	ManipulatedFrame * activeFrame;
 	QManualDeformer * defCtrl;
+	QFFD * activeDeformer;
+	VoxelDeformer * activeVoxelDeformer;
 
 	void loadMesh(QString fileName);
 
@@ -106,6 +110,9 @@ public slots:
 
 	void print(QString message, long age = 1000);
 	void dequeueLastMessage();
+
+	void setActiveFFDDeformer();
+	void setActiveVoxelDeformer();
 
 private:
 	// DEBUG:

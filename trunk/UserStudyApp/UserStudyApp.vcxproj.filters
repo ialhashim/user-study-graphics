@@ -306,6 +306,12 @@
     <ClCompile Include="Screens\project\GraphicsLibrary\Basic\Triangle.cpp">
       <Filter>Screens\DesignScreen\project</Filter>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_Offset.cpp">
+      <Filter>MainWindow\Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_Offset.cpp">
+      <Filter>MainWindow\Generated Files\Release</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="userstudyMainWindow.ui">
@@ -354,6 +360,9 @@
       <Filter>Screens\DesignScreen\project</Filter>
     </CustomBuild>
     <CustomBuild Include="Screens\project\GUI\MeshBrowser\QuickMesh.h">
+      <Filter>Screens\DesignScreen\project</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Screens\project\Stacker\Offset.h">
       <Filter>Screens\DesignScreen\project</Filter>
     </CustomBuild>
   </ItemGroup>

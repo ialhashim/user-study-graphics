@@ -63,15 +63,20 @@ void UserStudyApp::nextButtonTutorial()
 	// Hack to connect to parent
 	designer->designWidget = designWidget;
 
-	// Connect
+	// Connect selection
 	designer->connect(designWidget->selectPrimitiveButton, SIGNAL(clicked()), SLOT(selectPrimitiveMode()));
 	designer->connect(designWidget->selectCurveButton, SIGNAL(clicked()), SLOT(selectCurveMode()));
 	designer->connect(designWidget->selectMultiButton, SIGNAL(clicked()), SLOT(selectMultiMode()));
 
+	// Connect transformation tools
 	designer->connect(designWidget->moveButton, SIGNAL(clicked()), SLOT(moveMode()));
 	designer->connect(designWidget->rotateButton, SIGNAL(clicked()), SLOT(rotateMode()));
 	designer->connect(designWidget->scaleButton, SIGNAL(clicked()), SLOT(scaleMode()));
 	
+	// Connect deformers
+	designer->connect(designWidget->ffdButton, SIGNAL(clicked()), SLOT(setActiveFFDDeformer()));
+	designer->connect(designWidget->voxelButton, SIGNAL(clicked()), SLOT(setActiveVoxelDeformer()));
+
 	designer->loadMesh("data/stool.obj");
 
 	ui.screens->setTabEnabled(DESIGN_SCREEN, true);
