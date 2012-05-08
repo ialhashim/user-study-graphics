@@ -4,6 +4,7 @@
 #include "project/Stacker/Controller.h"
 #include "project/Stacker/Primitive.h"
 #include "project/Stacker/QManualDeformer.h"
+#include "project/Utility/SimpleDraw.h"
 
 #include "MyDesigner.h"
 #define GL_MULTISAMPLE 0x809D
@@ -13,14 +14,17 @@
 #include <QFileInfo>
 #include <QFont>
 #include <QFontMetrics>
+#include <QPushButton>
 QFontMetrics * fm;
 
 // Misc.
 #include "sphereDraw.h"
 #include "drawRoundRect.h"
+#include "drawPlane.h"
 
 MyDesigner::MyDesigner( QWidget * parent /*= 0*/ ) : QGLViewer(parent)
 {
+	defCtrl = NULL;
 	selectMode = SELECT_NONE;
 	transformMode = NONE_MODE;
 	skyRadius = 1.0;
@@ -36,6 +40,8 @@ MyDesigner::MyDesigner( QWidget * parent /*= 0*/ ) : QGLViewer(parent)
 	// TEXT ON SCREEN
 	timer = new QTimer(this);
 	connect(timer, SIGNAL(timeout()), SLOT(dequeueLastMessage()));
+
+	this->setMouseTracking(true);
 }
 
 void MyDesigner::init()
@@ -157,7 +163,7 @@ void MyDesigner::drawTool()
 {
 	if(!selection.size()) return;
 
-	double toolScale = 0.3;
+	double toolScale = 0.4;
 
 	switch(transformMode){
 	case NONE_MODE: break;
@@ -166,7 +172,9 @@ void MyDesigner::drawTool()
 			glPushMatrix();
 			glMultMatrixd(manipulatedFrame()->matrix());
 			glColor3f(1,1,0);
+			glRotated(-90,0,0,1);
 			drawAxis(toolScale);
+			SimpleDraw::DrawSolidBox(Vec3d(0),0.1,0.1,0.1);
 			glPopMatrix();
 			break;
 		}
@@ -176,7 +184,7 @@ void MyDesigner::drawTool()
 			glPushMatrix();
 			glMultMatrixd(manipulatedFrame()->matrix());
 
-			Circle c(Vec3d(0,0,0), Vec3d(0,0,1),toolScale);
+			Circle c(Vec3d(0,0,0), Vec3d(0,0,1),toolScale * 0.75);
 			c.draw(1,Vec4d(1,1,0,1)); c.draw(3,Vec4d(0,0,0,1));
 			glRotated(90,0,1,0);
 			c.draw(1,Vec4d(1,1,0,1)); c.draw(3,Vec4d(0,0,0,1));
@@ -185,7 +193,7 @@ void MyDesigner::drawTool()
 			
 			glDisable(GL_DEPTH_TEST);
 			glColor4d(1,1,0,0.1);
-			drawSolidSphere(toolScale, 20,20);
+			drawSolidSphere(toolScale* 0.75, 20,20);
 			glEnable(GL_DEPTH_TEST);
 
 			glPopMatrix();
@@ -194,22 +202,33 @@ void MyDesigner::drawTool()
 		}
 	case SCALE_MODE:
 		{
-			glDisable(GL_LIGHTING);
 			glPushMatrix();
 			glMultMatrixd(manipulatedFrame()->matrix());
 
-			Circle c1(Vec3d(0,0,0), Vec3d(0,0,1),toolScale, 4);
-			glPushMatrix();glRotated(45,0,0,1);
+			Vec3d delta = scaleDelta;
+
+			toolScale *= 0.5;
+
+			glEnable(GL_LIGHTING);
+			glColor4d(1,1,0,1);
+			if(delta.x() != 1) SimpleDraw::DrawArrowDirected(Vec3d(0), Vec3d(1,0,0),0.2);
+			if(delta.y() != 1) SimpleDraw::DrawArrowDirected(Vec3d(0), Vec3d(0,-1,0),0.2);
+			if(delta.z() != 1) SimpleDraw::DrawArrowDirected(Vec3d(0), Vec3d(0,0,1),0.2);
+			glDisable(GL_LIGHTING);
+
+			delta.x() = abs(delta.x());
+			delta.y() = abs(delta.y());
+			delta.z() = abs(delta.z());
+			glScaled(delta.x(), delta.y(), delta.z());
+
+			Circle c1(Vec3d(toolScale*0.75,-toolScale*0.75,0), Vec3d(0,0,1),toolScale, 4);
 			c1.drawFilled(Vec4d(1,1,0,0.2), 2, Vec4d(0,0,0,1));
-			glPopMatrix();
-			Circle c2(Vec3d(0,0,0), Vec3d(0,1,0),toolScale, 4);
-			glPushMatrix();glRotated(45,0,1,0);
+
+			Circle c2(Vec3d(toolScale*0.75,0,toolScale*0.75), Vec3d(0,1,0),toolScale, 4);
 			c2.drawFilled(Vec4d(1,1,0,0.2), 2, Vec4d(0,0,0,1));
-			glPopMatrix();
-			Circle c3(Vec3d(0,0,0), Vec3d(1,0,0),toolScale, 4);
-			glPushMatrix();glRotated(45,1,0,0);
+
+			Circle c3(Vec3d(0,-toolScale*0.75,toolScale*0.75), Vec3d(1,0,0),toolScale, 4);
 			c3.drawFilled(Vec4d(1,1,0,0.2), 2, Vec4d(0,0,0,1));
-			glPopMatrix();
 
 			glPopMatrix();
 			glEnable(GL_LIGHTING);
@@ -309,10 +328,49 @@ void MyDesigner::postDraw()
 	glClear(GL_DEPTH_BUFFER_BIT);
 	drawTool();
 
+	drawViewChanger();
+
 	// Revolve Around Point, line when camera rolls, zoom region
 	drawVisualHints();
-
+	
 	drawOSD();
+}
+
+void MyDesigner::drawViewChanger()
+{
+	int viewport[4];
+	int scissor[4];
+
+	glGetIntegerv(GL_VIEWPORT, viewport);
+	glGetIntegerv(GL_SCISSOR_BOX, scissor);
+
+	const int size = 90;
+	glViewport(width() - size, 0,size,size);
+	glScissor(width() - size, 0,size,size);
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	glMatrixMode(GL_PROJECTION);glPushMatrix();glLoadIdentity();
+	glOrtho(-1, 1, -1, 1, -10, 10);
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+	glRotated(-45,1,0,0);glRotated(45,0,0,1);glRotated(180,0,0,1);
+
+	glColor4d(1,1,1,1); SimpleDraw::DrawCube(Vec3d(0,0,0));
+	glColor4d(1,0,0,1);
+
+	double scale = 1.0;
+	Vec3d corner (0.5,0.5,0.5);SimpleDraw::DrawArrowDirected(corner, corner, scale,true,true);
+	Vec3d top (0,0,0.5);SimpleDraw::DrawArrowDirected(top, top, scale,true,true);
+	Vec3d front (0,0.5,0);SimpleDraw::DrawArrowDirected(front, front, scale,true,true);
+	Vec3d side (0.5,0,0);SimpleDraw::DrawArrowDirected(side, side, scale,true,true);
+
+	glMatrixMode(GL_PROJECTION);glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);glPopMatrix();
+
+	glScissor(scissor[0],scissor[1],scissor[2],scissor[3]);
+	glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
 }
 
 void MyDesigner::drawOSD()
@@ -331,11 +389,6 @@ void MyDesigner::drawOSD()
 
 	/* Mode text */
 	drawMessage("Select mode: " + selectModeTxt[this->selectMode], padY(lineNum));
-	
-	if(transformMode != NONE_MODE)
-	{
-		drawMessage("Tool: " + toolModeTxt[transformMode], padY(lineNum), Vec4d(1.0,1.0,0,0.25));
-	}
 
 	if(selectMode == CONTROLLER || selectMode == CONTROLLER_ELEMENT)
 	{
@@ -353,6 +406,11 @@ void MyDesigner::drawOSD()
 		drawMessage("Curve - " + curveId, padY(lineNum), Vec4d(0,1.0,0,0.25));
 	}
 
+	if(transformMode != NONE_MODE)
+	{
+		drawMessage("Tool: " + toolModeTxt[transformMode], padY(lineNum), Vec4d(1.0,1.0,0,0.25));
+	}
+
 	// Textual log messages
 	for(int i = 0; i < osdMessages.size(); i++){
 		int margin = 20; //px
@@ -362,6 +420,9 @@ void MyDesigner::drawOSD()
 		qglColor(Qt::white);
 		renderText(x, y, osdMessages.at(i));
 	}
+
+	setForegroundColor(QColor(0,0,0));
+	QGLViewer::postDraw();
 }
 
 void MyDesigner::drawMessage(QString message, int x, int y, Vec4d backcolor)
@@ -486,12 +547,21 @@ void MyDesigner::loadMesh( QString fileName )
 	Controller * ctrl = (Controller *)loadedMesh->ptr["controller"];
 
 	// Setup controller file name
-	fileName.chop(3);fileName += ".ctrl";
+	fileName.chop(3);fileName += "ctrl";
 
 	if(QFileInfo(fileName).exists())
 	{
 		std::ifstream inF(qPrintable(fileName), std::ios::in);
 		ctrl->load(inF);
+		inF.close();
+
+		fileName.chop(4);fileName += "grp";
+		if(QFileInfo(fileName).exists())
+		{
+			std::ifstream inF(qPrintable(fileName), std::ios::in);
+			ctrl->loadGroups(inF);
+			inF.close();
+		}
 	}
 
 	setActiveObject(loadedMesh);
@@ -505,6 +575,45 @@ void MyDesigner::mousePressEvent( QMouseEvent* e )
 	{
 		this->startMousePos2D = e->pos();
 		camera()->convertClickToLine(e->pos(), startMouseOrigin, startMouseDir);
+		
+		if(!defCtrl) return;
+
+		defCtrl->saveOriginal();
+
+		// Set constraints
+		if(transformMode == ROTATE_MODE)
+		{
+			AxisPlaneConstraint * r = new AxisPlaneConstraint;
+			r->setTranslationConstraintType(AxisPlaneConstraint::FORBIDDEN);
+			defCtrl->getFrame()->setConstraint(r);
+		}
+
+		if(transformMode == SCALE_MODE)
+		{
+			// Forbid everything
+			AxisPlaneConstraint * c = new AxisPlaneConstraint;
+			c->setRotationConstraintType(AxisPlaneConstraint::FORBIDDEN);
+			c->setTranslationConstraintType(AxisPlaneConstraint::FORBIDDEN);
+			defCtrl->getFrame()->setConstraint(c);
+
+			Vec3d o(currMouseOrigin[0],currMouseOrigin[1],currMouseOrigin[2]);
+			Vec3d r(currMouseDir[0],currMouseDir[1],currMouseDir[2]);
+
+			Vec3d px = rayMeshIntersect(o, r, planeX(defCtrl->pos(), skyRadius));
+			Vec3d py = rayMeshIntersect(o, r, planeY(defCtrl->pos(), skyRadius));
+			Vec3d pz = rayMeshIntersect(o, r, planeZ(defCtrl->pos(), skyRadius));
+
+			debugPoints.clear();
+
+			Point p(0,0,0);
+
+			// If we got a hit
+			if(px.x() < DBL_MAX) p = px;
+			if(py.y() < DBL_MAX) p = py;
+			if(pz.z() < DBL_MAX) p = pz;
+
+			startScalePos = p;
+		}
 	}
 
 	isMousePressed = true;
@@ -515,11 +624,167 @@ void MyDesigner::mouseReleaseEvent( QMouseEvent* e )
 	QGLViewer::mouseReleaseEvent(e);
 
 	isMousePressed = false;
+
+	if(transformMode == ROTATE_MODE)
+	{
+		defCtrl->saveOriginal();
+		defCtrl->getFrame()->setOrientation(Quaternion());
+		updateGL();
+	}
+
+	if(transformMode == TRANSLATE_MODE)
+	{
+		defCtrl->saveOriginal();
+	}
+
+	if(transformMode == SCALE_MODE)
+	{
+		scaleDelta = Vec3d(1.0);
+		updateGL();
+	}
+
+	// View changer box area
+	double scale = 90;
+	int x = e->pos().x(), y = e->pos().y();
+	if(x > width() - scale && y > height() - scale)
+	{
+		QPoint p(abs(x - width() + scale), abs(y - height() + scale));
+
+		double meshHeight = activeMesh->bbmax.z() - activeMesh->bbmin.z();
+		double meshLength = activeMesh->bbmax.y() - activeMesh->bbmin.y();
+		double meshWidth = activeMesh->bbmax.x() - activeMesh->bbmin.x();
+
+		QSize box(QSize(scale * 0.25, scale * 0.25));
+
+		QRect top(QPoint(30,15), box);
+		QRect front(QPoint(52,52), box);
+		QRect side(QPoint(12,52), box);
+		QRect corner(QPoint(32,45), box);
+
+		if(top.contains(p)){
+			Frame f(Vec(0,0,3*meshHeight), Quaternion());
+			camera()->interpolateTo(f,0.25);
+		}
+
+		if(front.contains(p)){
+			Frame f(Vec(3*meshLength,0,0), Quaternion(Vec(0,0,1),Vec(1,0,0)));
+			f.rotate(Quaternion(Vec(0,0,1), M_PI / 2.0));
+			camera()->interpolateTo(f,0.25);
+		}
+
+		if(side.contains(p)){
+			Frame f(Vec(0,-3*meshWidth,0), Quaternion(Vec(0,0,1),Vec(0,-1,0)));
+			camera()->interpolateTo(f,0.25);
+		}
+
+		if(corner.contains(p)){
+			Frame f(Vec(2*meshWidth,2*-meshLength,2*meshHeight), Quaternion());
+			f.rotate(Quaternion(Vec(0,0,1), M_PI / 4.0));
+			f.rotate(Quaternion(Vec(1,0,0), M_PI / 4.0));
+			f.translate(-meshWidth * 0.8, meshLength * 0.5,0);
+			camera()->interpolateTo(f,0.25);
+		}
+	}
 }
 
 void MyDesigner::mouseMoveEvent( QMouseEvent* e )
 {
 	QGLViewer::mouseMoveEvent(e);
+	currMousePos2D = e->pos();
+	camera()->convertClickToLine(currMousePos2D, currMouseOrigin, currMouseDir);
+
+	if(isMousePressed && defCtrl && e->buttons() & Qt::LeftButton && !(e->modifiers() & Qt::ShiftModifier))
+	{
+		Vec3d o(currMouseOrigin[0],currMouseOrigin[1],currMouseOrigin[2]);
+		Vec3d r(currMouseDir[0],currMouseDir[1],currMouseDir[2]);
+
+		Vec3d px = rayMeshIntersect(o, r, planeX(defCtrl->pos(), skyRadius));
+		Vec3d py = rayMeshIntersect(o, r, planeY(defCtrl->pos(), skyRadius));
+		Vec3d pz = rayMeshIntersect(o, r, planeZ(defCtrl->pos(), skyRadius));
+
+		debugPoints.clear();
+
+		Point p(0,0,0);
+
+		// If we got a hit
+		if(px.x() < DBL_MAX) p = px;
+		if(py.y() < DBL_MAX) p = py;
+		if(pz.z() < DBL_MAX) p = pz;
+
+		// Used later
+		Vec3d x = Vec3d(1, 0, 0);
+		Vec3d y = Vec3d(0, 1, 0);
+		Vec3d z = Vec3d(0, 0, 1);
+
+		if(transformMode == SCALE_MODE)
+		{
+			currScalePos = p;
+
+			Primitive * prim = ctrl()->getSelectedPrimitive(); if(!prim) return;
+		
+			Vec3d delta = (currScalePos - startScalePos);
+
+			delta.x() = abs(delta.x());
+			delta.y() = abs(delta.y());
+			delta.z() = abs(delta.z());
+		
+			// Project to main axes
+			QMultiMap<double,int> proj;
+			proj.insert(dot(delta, x), 0);
+			proj.insert(dot(delta, y), 1);
+			proj.insert(dot(delta, z), 2);
+
+			// Extract sorted values 
+			QVector<double> value;
+			QVector<int> index;		
+			foreach(double key, proj.keys()){
+				foreach(int id, proj.values(key)){
+					value.push_back(key);
+					index.push_back(id);
+				}
+			}
+
+			// Scaling
+			delta = Vec3d(0.0);
+			if (value[2] > value[1] * 3)
+			{
+				// line
+				delta[index[2]] = value[2];
+			}
+			else if (value[2] < value[0] * 3)
+			{
+				// cube
+				delta[index[0]] = value[0];
+				delta[index[1]] = value[1];
+				delta[index[2]] = value[2];
+			}
+			else 
+			{
+				// plane
+				delta[index[1]] = value[1];
+				delta[index[2]] = value[2];
+			}
+
+			bool isExpand = false;
+			Vec3d start = defCtrl->pos();
+			if((currScalePos - start).norm() > (startScalePos - start).norm())
+				isExpand = true;
+
+			if(isExpand) delta = Vec3d(1.0) + delta;
+			else delta = Vec3d(1.0) - delta;
+
+			defCtrl->scale(delta);
+
+			scaleDelta = delta;
+
+			updateGL();
+		}
+
+		if(transformMode == TRANSLATE_MODE)
+		{
+			// Should constraint to closest axis line..
+		}
+	}
 }
 
 void MyDesigner::wheelEvent( QWheelEvent* e )
@@ -614,9 +879,8 @@ void MyDesigner::transformPrimitive(bool modifySelect)
 		if(selected == -1) 
 		{
 			transformMode = NONE_MODE;
-			selectMode = SELECT_NONE;
-			setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, SELECT);
-			setMouseBinding(Qt::LeftButton, CAMERA, ROTATE);
+			clearButtons();
+			designWidget->selectPrimitiveButton->setChecked(true);
 			return;
 		}
 	}
@@ -630,8 +894,12 @@ void MyDesigner::transformPrimitive(bool modifySelect)
 		emit(objectInserted());
 
 		setManipulatedFrame( defCtrl->getFrame() );
-		Vec3d q = c->getSelectedPrimitive()->centerPoint();
-		manipulatedFrame()->setPosition( Vec(q.x(), q.y(), q.z()) );
+
+		if(c->getSelectedPrimitive())
+		{
+			Vec3d q = c->getSelectedPrimitive()->centerPoint();
+			manipulatedFrame()->setPosition( Vec(q.x(), q.y(), q.z()) );
+		}
 	}
 }
 
@@ -675,9 +943,12 @@ void MyDesigner::selectPrimitiveMode()
 	Controller * c = ctrl();
 	if(c && c->getSelectedPrimitive()) c->getSelectedPrimitive()->selectedCurveId = -1;
 
-	transformMode = NONE_MODE;
+	// clear selection of primitives
+	selection.clear();
+	c->selectPrimitive(-1);
+
 	setSelectMode(CONTROLLER);
-	updateGL();
+	selectTool();
 }
 
 void MyDesigner::selectCurveMode()
@@ -685,9 +956,8 @@ void MyDesigner::selectCurveMode()
 	setMouseBinding(Qt::LeftButton, SELECT);
 	setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, CAMERA, ROTATE);
 
-	transformMode = NONE_MODE;
 	setSelectMode(CONTROLLER_ELEMENT);
-	updateGL();
+	selectTool();
 }
 
 void MyDesigner::selectMultiMode()
@@ -695,45 +965,83 @@ void MyDesigner::selectMultiMode()
 
 }
 
+void MyDesigner::selectTool()
+{
+	clearButtons();
+	if(selectMode == CONTROLLER) designWidget->selectPrimitiveButton->setChecked(true);
+	if(selectMode == CONTROLLER_ELEMENT) designWidget->selectCurveButton->setChecked(true);
+	transformMode = NONE_MODE;
+	updateGL();
+}
+
 void MyDesigner::moveMode()
 {
 	setMouseBinding(Qt::LeftButton, FRAME, TRANSLATE);
-	setMouseBinding(Qt::ControlModifier | Qt::LeftButton, SELECT);
-	setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, CAMERA, ROTATE);
-
 	transformMode = TRANSLATE_MODE;
 	toolMode();
-	updateGL();
 }
 
 void MyDesigner::rotateMode()
 {
 	setMouseBinding(Qt::LeftButton, FRAME, ROTATE);
-	setMouseBinding(Qt::ControlModifier | Qt::LeftButton, SELECT);
-	setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, CAMERA, ROTATE);
-
 	transformMode = ROTATE_MODE;
 	toolMode();
-	updateGL();
 }
 
 void MyDesigner::scaleMode()
 {
-	//setMouseBinding(Qt::LeftButton, FRAME, TRANSLATE);
-	//setMouseBinding(Qt::ControlModifier | Qt::LeftButton, SELECT);
-	//setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, CAMERA, ROTATE);
-
+	setMouseBinding(Qt::LeftButton, FRAME, NO_MOUSE_ACTION);
 	transformMode = SCALE_MODE;
+	scaleDelta = Vec3d(1.0);
 	toolMode();
-	updateGL();
 }
 
 void MyDesigner::toolMode()
 {
+	setMouseBinding(Qt::ControlModifier | Qt::LeftButton, SELECT);
+	setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, CAMERA, ROTATE);
+
+	clearButtons();
+
+	if(transformMode == TRANSLATE_MODE) designWidget->moveButton->setChecked(true);
+	if(transformMode == ROTATE_MODE) designWidget->rotateButton->setChecked(true);
+	if(transformMode == SCALE_MODE) designWidget->scaleButton->setChecked(true);
+
 	if(selectMode == CONTROLLER) transformPrimitive(false);
 	if(selectMode == CONTROLLER_ELEMENT) transformCurve(false);
 
-	setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, SELECT);
+	if(selection.empty())
+	{
+		if(transformMode != NONE_MODE)	transformMode = NONE_MODE;
+		clearButtons();
+		setMouseBinding(Qt::LeftButton, CAMERA, ROTATE);
+		this->displayMessage("Please select something");
+	}
+	else
+	{
+		this->displayMessage("Press shift to move camera", 1000);
+	}
+
+	updateGL();
+}
+
+void MyDesigner::clearButtons()
+{
+	// un-check all buttons
+	int count = designWidget->dockWidgetContents->layout()->count();
+	for(int i = 0; i < count; i++){
+		QLayoutItem * item = designWidget->dockWidgetContents->layout()->itemAt(i);
+		QGroupBox *box = qobject_cast<QGroupBox*>(item->widget());
+		if(box)
+		{
+			int c = box->layout()->count();
+			for(int j = 0; j < c; j++){
+				QToolButton *button = qobject_cast<QToolButton*>(box->layout()->itemAt(j)->widget());
+				if(button) 
+					button->setChecked(false);
+			}
+		}
+	}
 }
 
 void MyDesigner::print( QString message, long age )

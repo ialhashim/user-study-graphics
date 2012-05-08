@@ -60,6 +60,9 @@ void UserStudyApp::nextButtonTutorial()
 	designer = new MyDesigner();
 	designWidget->viewerAreaLayout->addWidget(designer);
 
+	// Hack to connect to parent
+	designer->designWidget = designWidget;
+
 	// Connect
 	designer->connect(designWidget->selectPrimitiveButton, SIGNAL(clicked()), SLOT(selectPrimitiveMode()));
 	designer->connect(designWidget->selectCurveButton, SIGNAL(clicked()), SLOT(selectCurveMode()));
