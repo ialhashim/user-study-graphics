@@ -23,6 +23,7 @@ QFontMetrics * fm;
 #include "sphereDraw.h"
 #include "drawRoundRect.h"
 #include "drawPlane.h"
+#include "drawCube.h"
 
 MyDesigner::MyDesigner( QWidget * parent /*= 0*/ ) : QGLViewer(parent)
 {
@@ -46,7 +47,11 @@ MyDesigner::MyDesigner( QWidget * parent /*= 0*/ ) : QGLViewer(parent)
 	timer = new QTimer(this);
 	connect(timer, SIGNAL(timeout()), SLOT(dequeueLastMessage()));
 
+	connect(camera()->frame(), SIGNAL(manipulated()), SLOT(cameraMoved()));
+
 	this->setMouseTracking(true);
+
+	viewTitle = "View";
 }
 
 void MyDesigner::init()
@@ -85,6 +90,16 @@ void MyDesigner::setupCamera()
 	camera()->setUpVector(Vec(0,0,1));
 	camera()->setPosition(Vec(2,-2,2));
 	camera()->lookAt(Vec());
+}
+
+void MyDesigner::cameraMoved()
+{
+	if(camera()->type() != Camera::PERSPECTIVE)
+	{
+		viewTitle = "View";
+		camera()->setType(Camera::PERSPECTIVE);
+		updateGL();
+	}
 }
 
 void MyDesigner::preDraw()
@@ -179,11 +194,11 @@ void MyDesigner::drawTool()
 	case TRANSLATE_MODE: 
 		{
 			glPushMatrix();
-			glMultMatrixd(manipulatedFrame()->matrix());
+			glMultMatrixd(defCtrl->getFrame()->matrix());
 			glColor3f(1,1,0);
 			glRotated(-90,0,0,1);
 			drawAxis(toolScale);
-			SimpleDraw::DrawSolidBox(Vec3d(0),0.1,0.1,0.1);
+			SimpleDraw::DrawSolidBox(Vec3d(0),0.1,0.1,0.1, 1,1,0,1);
 			glPopMatrix();
 			break;
 		}
@@ -191,7 +206,7 @@ void MyDesigner::drawTool()
 		{
 			glDisable(GL_LIGHTING);
 			glPushMatrix();
-			glMultMatrixd(manipulatedFrame()->matrix());
+			glMultMatrixd(defCtrl->getFrame()->matrix());
 
 			Circle c(Vec3d(0,0,0), Vec3d(0,0,1),toolScale * 0.75);
 			c.draw(1,Vec4d(1,1,0,1)); c.draw(3,Vec4d(0,0,0,1));
@@ -212,7 +227,7 @@ void MyDesigner::drawTool()
 	case SCALE_MODE:
 		{
 			glPushMatrix();
-			glMultMatrixd(manipulatedFrame()->matrix());
+			glMultMatrixd(defCtrl->getFrame()->matrix());
 
 			Vec3d delta = scaleDelta;
 
@@ -281,10 +296,15 @@ void MyDesigner::drawObject()
 		/** Draw front-facing polygons as filled */
 		glPolygonMode (GL_FRONT, GL_FILL);
 		glCullFace (GL_BACK);
-
+		
 		/* Draw solid object */
 		for (QMap<QString, VBO>::iterator i = vboCollection.begin(); i != vboCollection.end(); ++i)
-			i->render();
+		{
+			if(viewTitle != "View")
+				i->render_regular(false, true);
+			else
+				i->render();
+		}
 
 		/* GL_POLYGON_BIT */
 		glPopAttrib ();
@@ -366,14 +386,46 @@ void MyDesigner::drawViewChanger()
 	glLoadIdentity();
 	glRotated(-45,1,0,0);glRotated(45,0,0,1);glRotated(180,0,0,1);
 
-	glColor4d(1,1,1,1); SimpleDraw::DrawCube(Vec3d(0,0,0));
-	glColor4d(1,0,0,1);
+	glColor4d(1,1,0.5,0.75); SimpleDraw::DrawCube(Vec3d(0,0,0),0.75f);
 
 	double scale = 1.0;
-	Vec3d corner (0.5,0.5,0.5);SimpleDraw::DrawArrowDirected(corner, corner, scale,true,true);
-	Vec3d top (0,0,0.5);SimpleDraw::DrawArrowDirected(top, top, scale,true,true);
-	Vec3d front (0,0.5,0);SimpleDraw::DrawArrowDirected(front, front, scale,true,true);
-	Vec3d side (0.5,0,0);SimpleDraw::DrawArrowDirected(side, side, scale,true,true);
+	
+	std::vector<bool> hover(6, false);
+
+	int x = currMousePos2D.x(), y = currMousePos2D.y();
+	if(x > width() - size && y > height() - size)
+	{
+		QPoint p(abs(x - width() + size), abs(y - height() + size));
+		QSize box(QSize(size * 0.25, size * 0.25));
+
+		QRect top(QPoint(30,15), box);
+		QRect front(QPoint(52,52), box);
+		QRect side(QPoint(12,52), box);
+		QRect corner(QPoint(32,45), box);
+		QRect backside(QPoint(64,18), box);
+		QRect back(QPoint(11,20), box);
+
+		if(top.contains(p)) hover[0] = true;
+		if(front.contains(p)) hover[1] = true;
+		if(side.contains(p)) hover[2] = true;
+		if(corner.contains(p)) hover[3] = true;
+		if(backside.contains(p)) hover[4] = true;
+		if(back.contains(p)) hover[5] = true;
+	}
+
+	glColor4d(1,1,0,1);
+	Vec3d top (0,0,0.5);if(hover[0]) glColor4d(1,0,0,1);
+	SimpleDraw::DrawArrowDirected(top, top, scale,true,true);glColor4d(1,1,0,1);
+	Vec3d front (0,0.5,0);if(hover[1]) glColor4d(1,0,0,1);
+	SimpleDraw::DrawArrowDirected(front, front, scale,true,true);glColor4d(1,1,0,1);
+	Vec3d side (0.5,0,0);if(hover[2]) glColor4d(1,0,0,1);
+	SimpleDraw::DrawArrowDirected(side, side, scale,true,true);glColor4d(1,1,0,1);
+	Vec3d corner (0.5,0.5,0.5);if(hover[3]) glColor4d(1,0,0,1);
+	SimpleDraw::DrawArrowDirected(corner, corner, scale,true,true);glColor4d(1,1,0,1);
+	Vec3d backside (-0.5,0,0);if(hover[4]) glColor4d(1,0,0,1);
+	SimpleDraw::DrawArrowDirected(backside, backside, scale,true,true);glColor4d(1,1,0,1);
+	Vec3d back (0,-0.5,0);if(hover[5]) glColor4d(1,0,0,1);
+	SimpleDraw::DrawArrowDirected(back, back, scale,true,true);
 
 	glMatrixMode(GL_PROJECTION);glPopMatrix();
 	glMatrixMode(GL_MODELVIEW);glPopMatrix();
@@ -419,6 +471,10 @@ void MyDesigner::drawOSD()
 	{
 		drawMessage("Tool: " + toolModeTxt[transformMode], padY(lineNum), Vec4d(1.0,1.0,0,0.25));
 	}
+
+	// View changer title
+	qglColor(QColor(255,255,180,200));
+	renderText(width() - (90*0.5) - (fm->width(viewTitle)*0.5), height() - (fm->height()*0.3),viewTitle);
 
 	// Textual log messages
 	for(int i = 0; i < osdMessages.size(); i++){
@@ -669,29 +725,49 @@ void MyDesigner::mouseReleaseEvent( QMouseEvent* e )
 		QRect front(QPoint(52,52), box);
 		QRect side(QPoint(12,52), box);
 		QRect corner(QPoint(32,45), box);
+		QRect backside(QPoint(64,18), box);
+		QRect back(QPoint(11,20), box);
 
 		if(top.contains(p)){
 			Frame f(Vec(0,0,3*meshHeight), Quaternion());
-			camera()->interpolateTo(f,0.25);
+			camera()->interpolateTo(f,0.25);camera()->setType(Camera::ORTHOGRAPHIC);
+			viewTitle = "Top";
 		}
 
 		if(front.contains(p)){
 			Frame f(Vec(3*meshLength,0,0), Quaternion(Vec(0,0,1),Vec(1,0,0)));
 			f.rotate(Quaternion(Vec(0,0,1), M_PI / 2.0));
-			camera()->interpolateTo(f,0.25);
+			camera()->interpolateTo(f,0.25);camera()->setType(Camera::ORTHOGRAPHIC);
+			viewTitle = "Front";
 		}
 
 		if(side.contains(p)){
 			Frame f(Vec(0,-3*meshWidth,0), Quaternion(Vec(0,0,1),Vec(0,-1,0)));
-			camera()->interpolateTo(f,0.25);
+			camera()->interpolateTo(f,0.25);camera()->setType(Camera::ORTHOGRAPHIC);
+			viewTitle = "Side";
+		}
+		
+		if(backside.contains(p)){
+			Frame f(Vec(0,3*meshWidth,0), Quaternion(Vec(0,0,1),Vec(0,1,0)));
+			f.rotate(Quaternion(Vec(0,0,1), M_PI));
+			camera()->interpolateTo(f,0.25);camera()->setType(Camera::ORTHOGRAPHIC);
+			viewTitle = "Back-side";
+		}
+		 
+		if(back.contains(p)){
+			Frame f(Vec(-3*meshLength,0,0), Quaternion(Vec(0,0,-1),Vec(1,0,0)));
+			f.rotate(Quaternion(Vec(0,0,-1), M_PI / 2.0));
+			camera()->interpolateTo(f,0.25);camera()->setType(Camera::ORTHOGRAPHIC);
+			viewTitle = "Back";
 		}
 
 		if(corner.contains(p)){
-			Frame f(Vec(2*meshWidth,2*-meshLength,2*meshHeight), Quaternion());
+			double mx = 2*Max(meshLength, Max(meshWidth, meshHeight));
+			Frame f(Vec(mx,-mx,mx), Quaternion());
 			f.rotate(Quaternion(Vec(0,0,1), M_PI / 4.0));
-			f.rotate(Quaternion(Vec(1,0,0), M_PI / 4.0));
-			f.translate(-meshWidth * 0.8, meshLength * 0.5,0);
-			camera()->interpolateTo(f,0.25);
+			f.rotate(Quaternion(Vec(1,0,0), M_PI / 3.3));
+			camera()->interpolateTo(f,0.25);camera()->setType(Camera::PERSPECTIVE);
+			viewTitle = "View";
 		}
 	}
 }
@@ -793,6 +869,13 @@ void MyDesigner::mouseMoveEvent( QMouseEvent* e )
 		{
 			// Should constraint to closest axis line..
 		}
+	}
+
+	double scale = 90;
+	int x = e->pos().x(), y = e->pos().y();
+	if(x > width() - scale && y > height() - scale)
+	{
+		updateGL();
 	}
 }
 
@@ -991,9 +1074,18 @@ void MyDesigner::selectCurveMode()
 	selectTool();
 }
 
-void MyDesigner::selectMultiMode()
+void MyDesigner::selectCameraMode()
 {
+	clearButtons();
+	designWidget->selectCameraButton->setChecked(true);
+	
+	setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, SELECT);
+	setMouseBinding(Qt::LeftButton, CAMERA, ROTATE);
 
+	selectMode = SELECT_NONE;
+	transformMode = NONE_MODE;
+
+	this->displayMessage("Freely move camera", 1000);
 }
 
 void MyDesigner::selectTool()
@@ -1056,7 +1148,7 @@ void MyDesigner::toolMode()
 	}
 	else
 	{
-		this->displayMessage("Press shift to move camera", 1000);
+		this->displayMessage("Press shift to move camera");
 	}
 
 	updateGL();
@@ -1069,8 +1161,7 @@ void MyDesigner::clearButtons()
 	for(int i = 0; i < count; i++){
 		QLayoutItem * item = designWidget->dockWidgetContents->layout()->itemAt(i);
 		QGroupBox *box = qobject_cast<QGroupBox*>(item->widget());
-		if(box)
-		{
+		if(box){
 			int c = box->layout()->count();
 			for(int j = 0; j < c; j++){
 				QToolButton *button = qobject_cast<QToolButton*>(box->layout()->itemAt(j)->widget());

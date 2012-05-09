@@ -66,7 +66,7 @@ void UserStudyApp::nextButtonTutorial()
 	// Connect selection
 	designer->connect(designWidget->selectPrimitiveButton, SIGNAL(clicked()), SLOT(selectPrimitiveMode()));
 	designer->connect(designWidget->selectCurveButton, SIGNAL(clicked()), SLOT(selectCurveMode()));
-	designer->connect(designWidget->selectMultiButton, SIGNAL(clicked()), SLOT(selectMultiMode()));
+	designer->connect(designWidget->selectCameraButton, SIGNAL(clicked()), SLOT(selectCameraMode()));
 
 	// Connect transformation tools
 	designer->connect(designWidget->moveButton, SIGNAL(clicked()), SLOT(moveMode()));

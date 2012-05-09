@@ -185,7 +185,7 @@
            </widget>
           </item>
           <item row="0" column="2">
-           <widget class="QToolButton" name="selectMultiButton">
+           <widget class="QToolButton" name="selectCameraButton">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>48</horstretch>
@@ -199,11 +199,11 @@
              </size>
             </property>
             <property name="text">
-             <string>Multi</string>
+             <string>Camera</string>
             </property>
             <property name="icon">
              <iconset resource="../Resources/userstudyResource.qrc">
-              <normaloff>:/UserStudyApp/toolIcons/selectRegion.png</normaloff>:/UserStudyApp/toolIcons/selectRegion.png</iconset>
+              <normaloff>:/UserStudyApp/toolIcons/camera.png</normaloff>:/UserStudyApp/toolIcons/camera.png</iconset>
             </property>
             <property name="iconSize">
              <size>
