@@ -312,6 +312,15 @@
     <ClCompile Include="GeneratedFiles\Release\moc_Offset.cpp">
       <Filter>MainWindow\Generated Files\Release</Filter>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_Client.cpp">
+      <Filter>MainWindow\Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_Client.cpp">
+      <Filter>MainWindow\Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="Screens\Client.cpp">
+      <Filter>Screens\FinishScreen</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="userstudyMainWindow.ui">
@@ -364,6 +373,9 @@
     </CustomBuild>
     <CustomBuild Include="Screens\project\Stacker\Offset.h">
       <Filter>Screens\DesignScreen\project</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Screens\Client.h">
+      <Filter>Screens\FinishScreen</Filter>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>

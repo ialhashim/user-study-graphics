@@ -4,6 +4,10 @@
 #include <QtGui/QMainWindow>
 #include "ui_userstudyserver.h"
 
+#include "Server.h"
+#include "ClientThread.h"
+class QNetworkReply;
+
 class UserStudyServer : public QMainWindow
 {
 	Q_OBJECT
@@ -11,6 +15,25 @@ class UserStudyServer : public QMainWindow
 public:
 	UserStudyServer(QWidget *parent = 0, Qt::WFlags flags = 0);
 	~UserStudyServer();
+
+	QString externalUrl;
+
+	Server server;
+
+	QString ipAddress, port;
+
+public slots:
+	void Log(QString message);
+	void getIP();
+	void sendIP();
+	void assignIP(QNetworkReply *reply);
+	void broadcastIP(QNetworkReply *reply);
+	void startServer();
+	void startedServer();
+
+signals:
+	void gotIP();
+	void sentIP();
 
 private:
 	Ui::UserStudyServerClass ui;

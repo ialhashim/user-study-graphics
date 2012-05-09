@@ -1,4 +1,6 @@
 <RCC>
-    <qresource prefix="UserStudyServer">
-    </qresource>
+  <qresource prefix="UserStudyServer">
+    <file>Resources/stop.gif</file>
+    <file>Resources/play.gif</file>
+  </qresource>
 </RCC>
