@@ -394,6 +394,9 @@
     <ClInclude Include="Screens\project\GraphicsLibrary\Basic\Triangle.h">
       <Filter>Screens\DesignScreen\project</Filter>
     </ClInclude>
+    <ClInclude Include="Screens\drawCube.h">
+      <Filter>Screens\DesignScreen\utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources\UserStudyApp.rc">

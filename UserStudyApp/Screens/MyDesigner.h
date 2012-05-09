@@ -93,12 +93,14 @@ public:
 	// Hack
 	Ui::DesignWidget * designWidget;
 
+	QString viewTitle;
+
 public slots:
 	
 	// Select buttons
 	void selectPrimitiveMode();
 	void selectCurveMode();
-	void selectMultiMode();
+	void selectCameraMode();
 
 	// Transform buttons
 	void moveMode();
@@ -113,6 +115,8 @@ public slots:
 
 	void setActiveFFDDeformer();
 	void setActiveVoxelDeformer();
+	
+	void cameraMoved();
 
 private:
 	// DEBUG:

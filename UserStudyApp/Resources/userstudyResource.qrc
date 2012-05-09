@@ -13,5 +13,6 @@
         <file>tutorial.mp4</file>
         <file>toolIcons/FFD.png</file>
         <file>toolIcons/volumeFFD.png</file>
+        <file>toolIcons/camera.png</file>
     </qresource>
 </RCC>

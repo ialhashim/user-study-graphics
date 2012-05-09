@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UserStudyApp", "UserStudyApp\UserStudyApp.vcxproj", "{1F1A17BF-81CA-4382-9EC9-E9CA23799B2F}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UserStudyServer", "UserStudyServer\UserStudyServer.vcxproj", "{813B3701-B2EB-4414-8EE9-7C6BA70EFFAA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -13,6 +15,10 @@ Global
 		{1F1A17BF-81CA-4382-9EC9-E9CA23799B2F}.Debug|Win32.Build.0 = Debug|Win32
 		{1F1A17BF-81CA-4382-9EC9-E9CA23799B2F}.Release|Win32.ActiveCfg = Release|Win32
 		{1F1A17BF-81CA-4382-9EC9-E9CA23799B2F}.Release|Win32.Build.0 = Release|Win32
+		{813B3701-B2EB-4414-8EE9-7C6BA70EFFAA}.Debug|Win32.ActiveCfg = Debug|Win32
+		{813B3701-B2EB-4414-8EE9-7C6BA70EFFAA}.Debug|Win32.Build.0 = Debug|Win32
+		{813B3701-B2EB-4414-8EE9-7C6BA70EFFAA}.Release|Win32.ActiveCfg = Release|Win32
+		{813B3701-B2EB-4414-8EE9-7C6BA70EFFAA}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
