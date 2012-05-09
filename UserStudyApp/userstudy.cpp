@@ -7,6 +7,8 @@ MyDesigner * designer = NULL;
 
 #include "Screens/project/GUI/MeshBrowser/QuickMeshViewer.h"
 
+#include "Screens/Client.h"
+
 UserStudyApp::UserStudyApp(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
 {
@@ -35,7 +37,8 @@ UserStudyApp::UserStudyApp(QWidget *parent, Qt::WFlags flags)
 
 	// Show welcome screen
 	//setScreen(WELCOME_SCREEN);
-	nextButtonTutorial();
+	//nextButtonTutorial();
+	nextButtonEvaluate();
 }
 
 UserStudyApp::~UserStudyApp()
@@ -138,7 +141,7 @@ void UserStudyApp::nextButtonEvaluate()
 
 void UserStudyApp::sendResultButton()
 {
-
+	Client * client = new Client(this);
 }
 
 void UserStudyApp::saveResultButton()
