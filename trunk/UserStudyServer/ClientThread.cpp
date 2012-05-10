@@ -27,7 +27,7 @@ void ClientThread::run()
 
 	QDomElement elt = doc.firstChild().firstChildElement("submit-id");
 	QString filename = elt.text();
-	filename += ".xml";
+	filename += "0.xml";
 
 	QFile File(filename);
 	if ( File.open( QIODevice::WriteOnly | QIODevice::Text ) ) 
@@ -37,12 +37,7 @@ void ClientThread::run()
 		File.close();
 	}
 
-	QHostAddress aa = tcpSocket.peerAddress();
-	QHostAddress bb = tcpSocket.localAddress();
-
-	QString all = aa.toString() + bb.toString();
-
-	emit(clientAddress(all));
+	emit(clientAddress(tcpSocket.peerAddress().toString()));
 
 	// Disconnect
 	tcpSocket.disconnectFromHost();
