@@ -1,6 +1,9 @@
 #include "ClientThread.h"
 
+#include <QBuffer>
 #include <QtNetwork>
+#include <QDomDocument>
+#include <QDomElement>
 
 ClientThread::ClientThread(int socketDescriptor, QObject *parent) : QThread(parent), socketDescriptor(socketDescriptor)
 {
@@ -15,15 +18,26 @@ void ClientThread::run()
 		return;
 	}
 
-	QByteArray block;
-	QDataStream out(&block, QIODevice::WriteOnly);
-	out.setVersion(QDataStream::Qt_4_0);
-	out << (quint16)0;
-	//out << text;
-	out.device()->seek(0);
-	out << (quint16)(block.size() - sizeof(quint16));
+	tcpSocket.waitForReadyRead();
 
-	tcpSocket.write(block);
-	tcpSocket.disconnectFromHost();
-	tcpSocket.waitForDisconnected();
+	// Read into a buffer
+	QByteArray b = tcpSocket.readAll();
+	QDomDocument doc;
+	doc.setContent(QString(b));
+
+	QDomElement elt = doc.firstChild().firstChildElement("submit-id");
+	QString filename = elt.text();
+	filename += ".xml";
+
+	QFile File(filename);
+	if ( File.open( QIODevice::WriteOnly | QIODevice::Text ) ) 
+	{
+		QTextStream TextStream(&File);
+		TextStream << doc.toString() ;
+		File.close();
+	}
+
+	// Disconnect
+	//tcpSocket.disconnectFromHost();
+	//tcpSocket.waitForDisconnected();
 }

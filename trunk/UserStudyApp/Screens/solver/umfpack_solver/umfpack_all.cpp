@@ -2,7 +2,7 @@
 //#define __cplusplus
 #define NBLAS
 #define NCHOLMOD
-#define NDEBUG
+//#define NDEBUG
 #define NPOSIX
 #define UMF_WINDOWS
 

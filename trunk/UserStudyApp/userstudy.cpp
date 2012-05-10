@@ -36,9 +36,9 @@ UserStudyApp::UserStudyApp(QWidget *parent, Qt::WFlags flags)
 	evalWidget->setupUi(ui.evaluateFrame);
 
 	// Show welcome screen
-	//setScreen(WELCOME_SCREEN);
-	//nextButtonTutorial();
-	nextButtonEvaluate();
+	setScreen(WELCOME_SCREEN);
+	//nextButtonTutorial(); // to test Designer
+	//nextButtonEvaluate(); // test Send data
 }
 
 UserStudyApp::~UserStudyApp()
