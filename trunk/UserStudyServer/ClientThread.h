@@ -12,9 +12,12 @@ public:
 
 	void run();
 
-signals:
-	void error(QTcpSocket::SocketError socketError);
+	QString address;
 
 private:
 	int socketDescriptor;
+
+signals:
+	void error(QTcpSocket::SocketError socketError);
+	void clientAddress(QString);
 };
