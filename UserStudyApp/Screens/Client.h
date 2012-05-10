@@ -16,8 +16,8 @@ public slots:
 	void receiveServerIP(QNetworkReply *reply);
 	void tryConnect();
 	void manageError( QAbstractSocket::SocketError socketError );
+	void sendData();
 
 signals:
 	void gotServerIP();
-
 };

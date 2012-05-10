@@ -5,6 +5,10 @@
 #include <QMessageBox>
 #include <iostream>
 #include <QMetaEnum>
+#include <QDomDocument>
+#include <QUuid>
+#include <QDateTime>
+#include <QHostInfo>
 
 Client::Client(QObject * parent) : QTcpSocket(parent)
 {
@@ -12,6 +16,7 @@ Client::Client(QObject * parent) : QTcpSocket(parent)
 
 	connect(this, SIGNAL(gotServerIP()), SLOT(tryConnect()));
 	connect(this, SIGNAL(error(QAbstractSocket::SocketError)), SLOT(manageError(QAbstractSocket::SocketError)));
+	connect(this, SIGNAL(connected()), SLOT(sendData()));
 
 	getServerIP();
 }
@@ -56,9 +61,36 @@ void Client::tryConnect()
 {
 	std::cout << "Connecting to: " << qPrintable(serverIP) << "\n";
 	connectToHost(serverIP, serverPort.toInt());
-	if(!waitForConnected(2000)){
-		QMessageBox::information(0, "Network error", "Cannot connect to server.");
+	if(!waitForConnected(3000)){
+		QMessageBox::information(0, "Network error", "Sorry, cannot connect to server.");
 		this->close();
+	}
+}
+
+void Client::sendData()
+{
+	if(state() == QAbstractSocket::ConnectedState)
+	{
+		QDomDocument doc("Submission");
+		QDomElement root = doc.createElement("Submission");
+		doc.appendChild(root);
+
+		// Submission ID
+		QDomElement submitId = doc.createElement("submit-id");
+		root.appendChild(submitId);
+		QString unique = QUuid::createUuid().toString() + QString::number(QDateTime().toTime_t());
+		QString id = QString::number(qHash(unique));
+		submitId.appendChild(doc.createTextNode("submission-" + id));
+
+		// Machine name
+		QDomElement fromAddress = doc.createElement("host-name");
+		root.appendChild(fromAddress);
+		fromAddress.appendChild(doc.createTextNode(QHostInfo::localHostName() + "." + QHostInfo::localDomainName()));
+
+		// Results..
+
+		QTextStream resultStream(this);
+		resultStream << doc.toString();
 	}
 }
 
@@ -71,7 +103,7 @@ void Client::manageError( QAbstractSocket::SocketError socketError )
 			for(int j = 0; j < m.keyCount(); j++){
 				if(m.value(j) == socketError){
 					printf("%s\n", qPrintable(QString(m.valueToKey(socketError))));
-					QMessageBox::information(0, "Network error", "Socket Error: " + QString(m.valueToKey(m.value(j))));
+					//QMessageBox::information(0, "Network error", "Socket Error: " + QString(m.valueToKey(m.value(j))));
 				}
 			}
 		}
