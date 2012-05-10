@@ -8,6 +8,9 @@ class Server : public QTcpServer{
 public:
 	Server(QObject *parent = 0);
 
+public slots:
+	void displayAddress(QString clientAddress);
+
 protected:
 	void incomingConnection(int socketDescriptor);
 

@@ -89,8 +89,11 @@ void Client::sendData()
 
 		// Results..
 
+		// Send stream
 		QTextStream resultStream(this);
 		resultStream << doc.toString();
+
+		QMessageBox::information(0, "Thank you", "Successfully sent to server!");
 	}
 }
 

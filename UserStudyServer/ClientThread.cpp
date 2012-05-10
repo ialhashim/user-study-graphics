@@ -38,6 +38,8 @@ void ClientThread::run()
 	}
 
 	// Disconnect
-	//tcpSocket.disconnectFromHost();
-	//tcpSocket.waitForDisconnected();
+	tcpSocket.disconnectFromHost();
+	tcpSocket.waitForDisconnected();
+
+	emit(clientAddress(tcpSocket.peerAddress().toString()));
 }
