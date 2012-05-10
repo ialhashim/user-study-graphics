@@ -28,7 +28,9 @@ void UserStudyServer::startServer()
 {
 	ui.logList->clear();
 
-	if (!server.listen()){
+	// Port 5900 is VNC, which is only other open one here..
+	if (!server.listen(QHostAddress::Any, 5900)) 
+	{
 		Log("Cannot start: " + server.errorString());
 		return;
 	}

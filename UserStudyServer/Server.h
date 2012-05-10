@@ -10,6 +10,7 @@ public:
 
 public slots:
 	void displayAddress(QString clientAddress);
+	void connectionDone();
 
 protected:
 	void incomingConnection(int socketDescriptor);

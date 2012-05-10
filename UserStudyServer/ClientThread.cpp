@@ -37,9 +37,14 @@ void ClientThread::run()
 		File.close();
 	}
 
+	QHostAddress aa = tcpSocket.peerAddress();
+	QHostAddress bb = tcpSocket.localAddress();
+
+	QString all = aa.toString() + bb.toString();
+
+	emit(clientAddress(all));
+
 	// Disconnect
 	tcpSocket.disconnectFromHost();
 	tcpSocket.waitForDisconnected();
-
-	emit(clientAddress(tcpSocket.peerAddress().toString()));
 }
