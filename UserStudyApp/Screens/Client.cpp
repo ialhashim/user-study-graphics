@@ -44,7 +44,7 @@ void Client::receiveServerIP( QNetworkReply *reply )
 
 			serverStatus = "Got server IP: " + serverIP + " at port: " + serverPort;
 
-			std::cout << "Got server IP :" << qPrintable(serverIP) << "\n";
+			std::cout << "Got server IP :" << qPrintable(serverIP) << " \t port:" << qPrintable(serverPort) << "\n";
 
 			emit(gotServerIP());
 			return;
