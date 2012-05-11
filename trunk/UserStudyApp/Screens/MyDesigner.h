@@ -12,6 +12,8 @@ class Controller;
 class QManualDeformer;
 class QFFD;
 class VoxelDeformer;
+class HiddenViewer;
+class Offset;
 #include "ui_DesignWidget.h"
 
 enum ViewMode { VIEW, SELECTION, MODIFY };
@@ -23,7 +25,7 @@ class MyDesigner : public QGLViewer{
 	Q_OBJECT
 
 public:
-	MyDesigner(QWidget * parent = 0);
+	MyDesigner(Ui::DesignWidget * useDesignWidget, QWidget * parent = 0);
 
 	void init();
 	void setupCamera();
@@ -42,6 +44,14 @@ public:
 	void updateVBOs();
 	void drawObject();
 	void drawObjectOutline();
+	
+	// Draw stacking
+	void drawStacking();
+	bool isDrawStacking;
+
+	// Offset stuff
+	HiddenViewer	* hiddenViewer;
+	Offset			* activeOffset;
 
 	// Mouse & Keyboard stuff
 	void mousePressEvent(QMouseEvent* e);
@@ -118,6 +128,12 @@ public slots:
 	
 	void cameraMoved();
 
+	void updateOffset();
+
+	void drawStackStateChanged ( int state );
+
+	void reloadActiveMesh();
+
 private:
 	// DEBUG:
 	std::vector<Vec> debugPoints;
@@ -142,5 +158,6 @@ private:
 signals:
 	void objectInserted();
 	void objectDiscarded( QString );
+	void objectUpdated();
 
 };

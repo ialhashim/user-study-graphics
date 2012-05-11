@@ -6,6 +6,8 @@
 #include "project/Stacker/QManualDeformer.h"
 #include "project/MathLibrary/Deformer/QFFD.h"
 #include "project/MathLibrary/Deformer/VoxelDeformer.h"
+#include "project/Stacker/HiddenViewer.h"
+#include "project/Stacker/Offset.h"
 #include "project/Utility/SimpleDraw.h"
 
 #include "MyDesigner.h"
@@ -25,17 +27,21 @@ QFontMetrics * fm;
 #include "drawPlane.h"
 #include "drawCube.h"
 
-MyDesigner::MyDesigner( QWidget * parent /*= 0*/ ) : QGLViewer(parent)
+MyDesigner::MyDesigner( Ui::DesignWidget * useDesignWidget, QWidget * parent /*= 0*/ ) : QGLViewer(parent)
 {
+	this->designWidget = useDesignWidget;
+
 	defCtrl = NULL;
 	activeDeformer = NULL;
 	activeVoxelDeformer = NULL;
+	activeOffset = NULL;
 
 	selectMode = SELECT_NONE;
 	transformMode = NONE_MODE;
 	skyRadius = 1.0;
 	activeMesh = NULL;
 	isMousePressed = false;
+
 	fm = new QFontMetrics(QFont());
 
 	connect(this, SIGNAL(objectInserted()), SLOT(updateGL()));
@@ -52,6 +58,18 @@ MyDesigner::MyDesigner( QWidget * parent /*= 0*/ ) : QGLViewer(parent)
 	this->setMouseTracking(true);
 
 	viewTitle = "View";
+
+	// Offset computation
+	hiddenViewer = new HiddenViewer();
+	QDockWidget * hiddenDock = new QDockWidget("HiddenViewer");
+	hiddenDock->setWidget (hiddenViewer);
+	designWidget->specialWidgetLayout->addWidget(hiddenDock);
+	hiddenDock->setFloating(true);
+	hiddenDock->setWindowOpacity(0.0);
+	isDrawStacking = false;
+
+	// Connect to show / hide stacking
+	connect(designWidget->showStacking, SIGNAL(stateChanged(int)), SLOT(drawStackStateChanged(int)));
 }
 
 void MyDesigner::init()
@@ -74,7 +92,10 @@ void MyDesigner::init()
 	glMaterialf(GL_FRONT, GL_SHININESS, high_shininess);
 
 	// Redirect keyboard
-	setShortcut( HELP, Qt::CTRL+Qt::Key_H);
+	setShortcut( HELP, Qt::CTRL+Qt::Key_H );
+	setShortcut( STEREO, Qt::SHIFT+Qt::Key_S );
+
+	camera()->frame()->setSpinningSensitivity(100.0);
 }
 
 void MyDesigner::setupLights()
@@ -124,15 +145,13 @@ void MyDesigner::preDraw()
 
 	// Draw fancy effects:
 	drawSolidSphere(skyRadius,30,30, true, true); // Sky dome
+
+
 	beginUnderMesh();
-	if(!isEmpty()){
-		double r = 0.75 * Max(activeMesh->bbmax.x() - activeMesh->bbmin.x(),
-			activeMesh->bbmax.y() - activeMesh->bbmin.y());
-		glClear(GL_DEPTH_BUFFER_BIT);
-		drawShadows();
-	}
 	drawCircleFade(Vec4d(0,0,0,0.25), 4); // Floor
+	drawShadows();
 	endUnderMesh();
+
 	glClear(GL_DEPTH_BUFFER_BIT);
 }
 
@@ -140,8 +159,9 @@ void MyDesigner::drawShadows()
 {
 	double objectHeight = activeMesh->bbmax.z() - activeMesh->bbmin.z();
 
-	glDisable(GL_DEPTH_TEST);
-	/* Draw shadows */
+	// N64 method :)
+	/*glDisable(GL_DEPTH_TEST);
+	// Draw shadows 
 	QMapIterator<QString, VBO> i(vboCollection);
 	while (i.hasNext()) {
 		i.next();
@@ -154,11 +174,33 @@ void MyDesigner::drawShadows()
 		glPushMatrix();
 		glTranslated(mesh->center.x(), mesh->center.y(), 0.01);
 		glScaled(scaleX, scaleY, 1.0);
-		double opacity = 0.5 * (1 - ((z + (objectHeight*0.5)) / objectHeight));
-		drawCircleFade(Vec4d(0,0,0,Max(0,Min(1,opacity))), 1); // Shadow
+		double opacity = 0.25 * (1 - ((z + (objectHeight*0.5)) / objectHeight));
+		drawCircleFade(Vec4d(0,0,0,Max(0,Min(0.5,opacity))), 1); // Shadow
 		glPopMatrix();
 	}
+	glEnable(GL_DEPTH_TEST);*/
+		
+	// Compute shadow matrix
+	GLfloat floorShadow[4][4];
+	GLfloat groundplane[4];
+	findPlane(groundplane, Vec3f(0,0,0), Vec3f(-1,0,0), Vec3f(-1,-1,0));
+	GLfloat lightpos[4] = {0.0,0.0,8,1};
+	shadowMatrix(floorShadow,groundplane, lightpos);
+
+	glScaled(1.1,1.1,0);
+	glPushMatrix();
+	glMultMatrixf((GLfloat *) floorShadow); /* Project the shadow. */
+	glColor4d(0,0,0,0.05);
+	glDisable(GL_LIGHTING);
+	glDisable(GL_DEPTH_TEST);
+	for (QMap<QString, VBO>::iterator i = vboCollection.begin(); i != vboCollection.end(); ++i)
+	{
+		i->render_depth();
+	}
+	glEnable(GL_LIGHTING);
 	glEnable(GL_DEPTH_TEST);
+	glPopMatrix();
+	
 }
 
 void MyDesigner::draw()
@@ -168,6 +210,9 @@ void MyDesigner::draw()
 
 	// The main object
 	drawObject();
+
+	// Draw stacked
+	if(activeOffset && isDrawStacking) drawStacking();
 
 	// Draw controller and primitives
 	if(ctrl() && (selectMode == CONTROLLER || selectMode == CONTROLLER_ELEMENT)) 
@@ -194,7 +239,9 @@ void MyDesigner::drawTool()
 	case TRANSLATE_MODE: 
 		{
 			glPushMatrix();
-			glMultMatrixd(defCtrl->getFrame()->matrix());
+			ManipulatedFrame * m = manipulatedFrame();
+			const GLdouble * mat = m->matrix();
+			glMultMatrixd(mat);
 			glColor3f(1,1,0);
 			glRotated(-90,0,0,1);
 			drawAxis(toolScale);
@@ -315,6 +362,32 @@ void MyDesigner::drawObject()
 	}
 }
 
+void MyDesigner::drawStacking()
+{
+	int stackCount = 3;
+
+	double S = activeMesh->val["stackability"];
+	Vec3d delta = activeMesh->vec["stacking_shift"];
+
+	// Draw stacking direction
+	glColor4dv(Color(1, 1, 0, 0.8));
+	SimpleDraw::DrawArrowDirected(Vec3d(0.0), delta.normalized());
+
+	glPushMatrix();
+	glColor4dv(Color(0.45,0.72,0.43,0.8));
+
+	// Top
+	glTranslated(delta[0],delta[1],delta[2]);
+	activeObject()->simpleDraw(false);
+
+	// Bottom
+	delta *= -2;
+	glTranslated(delta[0],delta[1],delta[2]);
+	activeObject()->simpleDraw(false);
+
+	glPopMatrix();
+}
+
 void MyDesigner::drawObjectOutline()
 {
 	/** Draw back-facing polygons as red lines	*/
@@ -355,13 +428,13 @@ void MyDesigner::postDraw()
 	endUnderMesh();
 
 	glClear(GL_DEPTH_BUFFER_BIT);
+
+	glPushAttrib(GL_ALL_ATTRIB_BITS);
 	drawTool();
-
 	drawViewChanger();
+	drawVisualHints(); // Revolve Around Point, line when camera rolls, zoom region
+	glPopAttrib();
 
-	// Revolve Around Point, line when camera rolls, zoom region
-	drawVisualHints();
-	
 	drawOSD();
 }
 
@@ -549,6 +622,8 @@ void MyDesigner::updateVBOs()
 void MyDesigner::updateActiveObject()
 {
 	vboCollection.clear();
+
+	emit(objectUpdated());
 }
 
 QSegMesh * MyDesigner::activeObject()
@@ -568,26 +643,11 @@ void MyDesigner::resetView()
 	camera()->showEntireScene();
 }
 
-void MyDesigner::setActiveObject(QSegMesh* newMesh)
+void MyDesigner::updateOffset()
 {
-	// Delete the original object
-	if (activeMesh)
-		emit( objectDiscarded( activeMesh->objectName() ) );
-
-	// Setup the new object
-	activeMesh = newMesh;
-
-	// Change title of scene
-	setWindowTitle(activeMesh->objectName());
-
-	// Set camera
-	resetView();
-
-	// Update the object
-	updateActiveObject();
-
-	// Stack panel 
-	emit(objectInserted());
+	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+	activeOffset->getStackability(true);
+	QApplication::restoreOverrideCursor();
 }
 
 void MyDesigner::loadMesh( QString fileName )
@@ -611,6 +671,9 @@ void MyDesigner::loadMesh( QString fileName )
 	loadedMesh->ptr["controller"] = new Controller(loadedMesh);
 	Controller * ctrl = (Controller *)loadedMesh->ptr["controller"];
 
+	// Save filename
+	loadedMesh->ptr["filename"] = new QString(fileName);
+
 	// Setup controller file name
 	fileName.chop(3);fileName += "ctrl";
 
@@ -632,6 +695,33 @@ void MyDesigner::loadMesh( QString fileName )
 	setActiveObject(loadedMesh);
 }
 
+void MyDesigner::setActiveObject(QSegMesh* newMesh)
+{
+	// Delete the original object
+	if (activeMesh)
+		emit( objectDiscarded( activeMesh->objectName() ) );
+
+	// Setup the new object
+	activeMesh = newMesh;
+
+	// Change title of scene
+	setWindowTitle(activeMesh->objectName());
+
+	// Set camera
+	resetView();
+
+	// Update the object
+	updateActiveObject();
+
+	// Update offset
+	activeOffset = new Offset(hiddenViewer);
+	hiddenViewer->setActiveObject(activeMesh);
+	updateOffset();
+	
+	// Stack panel 
+	emit(objectInserted());
+}
+
 void MyDesigner::mousePressEvent( QMouseEvent* e )
 {
 	QGLViewer::mousePressEvent(e);
@@ -646,6 +736,11 @@ void MyDesigner::mousePressEvent( QMouseEvent* e )
 		defCtrl->saveOriginal();
 
 		// Set constraints
+		if(transformMode == TRANSLATE_MODE)
+		{
+
+		}
+
 		if(transformMode == ROTATE_MODE)
 		{
 			AxisPlaneConstraint * r = new AxisPlaneConstraint;
@@ -770,6 +865,14 @@ void MyDesigner::mouseReleaseEvent( QMouseEvent* e )
 			viewTitle = "View";
 		}
 	}
+	else
+	{
+		if(activeOffset && isDrawStacking && selectMode != SELECT_NONE)
+		{
+			updateOffset();
+			updateGL();
+		}
+	}
 }
 
 void MyDesigner::mouseMoveEvent( QMouseEvent* e )
@@ -892,6 +995,8 @@ void MyDesigner::wheelEvent( QWheelEvent* e )
 
 			double s = 0.1 * (e->delta() / 120.0);
 			defCtrl->scaleUp(1 + s);
+
+			updateGL();
 		}
 		break;
 	}
@@ -905,7 +1010,24 @@ void MyDesigner::keyPressEvent( QKeyEvent *e )
 		this->loadMesh(fileName);
 	}
 
-	QGLViewer::keyPressEvent(e);
+	if(e->key() == Qt::Key_S)
+	{
+		isDrawStacking = !isDrawStacking;
+		if(isDrawStacking) updateOffset();
+
+		designWidget->showStacking->setChecked(isDrawStacking);
+	}
+
+	if(e->key() == Qt::Key_Space)	selectPrimitiveMode();
+	if(e->key() == Qt::Key_C)		selectCameraMode();
+	if(e->key() == Qt::Key_M)		moveMode();
+	if(e->key() == Qt::Key_R)		rotateMode();
+	if(e->key() == Qt::Key_E)		scaleMode();
+
+	updateGL();
+
+	if(e->key() != Qt::Key_Space) // disable fly mode..
+		QGLViewer::keyPressEvent(e);
 }
 
 void MyDesigner::beginUnderMesh()
@@ -945,7 +1067,10 @@ void MyDesigner::postSelection( const QPoint& point )
 		if(selection.contains( selected ))
 			selection.remove(selection.indexOf(selected));
 		else
+		{
+			selection.clear();
 			selection.push_back(selected); // to start from 0
+		}
 	}
 
 	// FFD and such deformers
@@ -995,24 +1120,22 @@ void MyDesigner::transformPrimitive(bool modifySelect)
 			transformMode = NONE_MODE;
 			clearButtons();
 			designWidget->selectPrimitiveButton->setChecked(true);
-			return;
 		}
+		
+		return;
 	}
 
 	if(!selection.isEmpty())
 	{
-		defCtrl = new QManualDeformer(c);
-		this->connect(defCtrl, SIGNAL(objectModified()), SLOT(updateActiveObject()));
-		//this->connect(defCtrl, SIGNAL(objectModified()), sp, SLOT(updateActiveObject()));
-
-		emit(objectInserted());
-
-		setManipulatedFrame( defCtrl->getFrame() );
-
 		if(c->getSelectedPrimitive())
 		{
+			defCtrl = new QManualDeformer(c);
+			setManipulatedFrame( defCtrl->getFrame() );
+
 			Vec3d q = c->getSelectedPrimitive()->centerPoint();
 			manipulatedFrame()->setPosition( Vec(q.x(), q.y(), q.z()) );
+
+			this->connect(defCtrl, SIGNAL(objectModified()), SLOT(updateActiveObject()));
 		}
 	}
 }
@@ -1021,20 +1144,27 @@ void MyDesigner::transformCurve(bool modifySelect)
 {
 	Controller * c = ctrl();
 	
-	int selected = selectedName();
+	if(!c || ! c->getSelectedPrimitive())
+		if(c->getSelectedPrimitive()->selectedCurveId < 0)
+			return;
 
-	if(modifySelect)
-		if(!c->selectPrimitiveCurve(selected)) return;
+	if(!selection.isEmpty())
+	{
+		int selected = selectedName();
+
+		if(modifySelect){
+			c->selectPrimitiveCurve(selected);
+			return;
+		}
 	
-	defCtrl = new QManualDeformer(c);
-	this->connect(defCtrl, SIGNAL(objectModified()), SLOT(updateActiveObject()));
-	//this->connect(defCtrl, SIGNAL(objectModified()), sp, SLOT(updateActiveObject()));
+		defCtrl = new QManualDeformer(c);
+		setManipulatedFrame( defCtrl->getFrame() );
 
-	emit(objectInserted());
+		Vec3d q = c->getSelectedCurveCenter();
+		manipulatedFrame()->setPosition( Vec(q.x(), q.y(), q.z()) );
 
-	setManipulatedFrame( defCtrl->getFrame() );
-	Vec3d q = c->getSelectedCurveCenter();
-	manipulatedFrame()->setPosition( Vec(q.x(), q.y(), q.z()) );
+		this->connect(defCtrl, SIGNAL(objectModified()), SLOT(updateActiveObject()));
+	}
 }
 
 void MyDesigner::setSelectMode( SelectMode toMode )
@@ -1082,6 +1212,9 @@ void MyDesigner::selectCameraMode()
 	setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, SELECT);
 	setMouseBinding(Qt::LeftButton, CAMERA, ROTATE);
 
+	selection.clear();
+	ctrl()->selectPrimitive(-1);
+
 	selectMode = SELECT_NONE;
 	transformMode = NONE_MODE;
 
@@ -1103,6 +1236,7 @@ void MyDesigner::selectTool()
 void MyDesigner::moveMode()
 {
 	setMouseBinding(Qt::LeftButton, FRAME, TRANSLATE);
+	setMouseBinding(Qt::RightButton, CAMERA, TRANSLATE);
 	transformMode = TRANSLATE_MODE;
 	toolMode();
 }
@@ -1110,6 +1244,8 @@ void MyDesigner::moveMode()
 void MyDesigner::rotateMode()
 {
 	setMouseBinding(Qt::LeftButton, FRAME, ROTATE);
+	setMouseBinding(Qt::ControlModifier | Qt::LeftButton, FRAME, SCREEN_ROTATE);
+
 	transformMode = ROTATE_MODE;
 	toolMode();
 }
@@ -1127,27 +1263,29 @@ void MyDesigner::toolMode()
 	activeDeformer = NULL;
 	activeVoxelDeformer = NULL;
 
-	setMouseBinding(Qt::ControlModifier | Qt::LeftButton, SELECT);
-	setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, CAMERA, ROTATE);
-
 	clearButtons();
-
-	if(transformMode == TRANSLATE_MODE) designWidget->moveButton->setChecked(true);
-	if(transformMode == ROTATE_MODE) designWidget->rotateButton->setChecked(true);
-	if(transformMode == SCALE_MODE) designWidget->scaleButton->setChecked(true);
-
-	if(selectMode == CONTROLLER) transformPrimitive(false);
-	if(selectMode == CONTROLLER_ELEMENT) transformCurve(false);
 
 	if(selection.empty())
 	{
-		if(transformMode != NONE_MODE)	transformMode = NONE_MODE;
-		clearButtons();
+		this->displayMessage("* Please select a part to transform *");
+
+		transformMode = NONE_MODE;
+		selectMode = SELECT_NONE;
+		
 		setMouseBinding(Qt::LeftButton, CAMERA, ROTATE);
-		this->displayMessage("Please select something");
 	}
 	else
 	{
+		setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, CAMERA, ROTATE);
+
+		// Deal with buttons
+		if(transformMode == TRANSLATE_MODE) designWidget->moveButton->setChecked(true);
+		if(transformMode == ROTATE_MODE) designWidget->rotateButton->setChecked(true);
+		if(transformMode == SCALE_MODE) designWidget->scaleButton->setChecked(true);
+
+		if(selectMode == CONTROLLER) transformPrimitive(false);
+		if(selectMode == CONTROLLER_ELEMENT) transformCurve(false);
+
 		this->displayMessage("Press shift to move camera");
 	}
 
@@ -1189,6 +1327,10 @@ void MyDesigner::dequeueLastMessage()
 
 void MyDesigner::setActiveFFDDeformer()
 {
+	clearButtons();
+	designWidget->ffdButton->setChecked(true);
+	this->transformMode = NONE_MODE;
+
 	activeVoxelDeformer = NULL;
 
 	Primitive * prim = ctrl()->getSelectedPrimitive(); if(!prim) return;
@@ -1199,21 +1341,60 @@ void MyDesigner::setActiveFFDDeformer()
 	activeDeformer = new QFFD(mesh, BoundingBoxFFD, Vec3i(nx,ny,nz));
 	connect(activeDeformer, SIGNAL(meshDeformed()), this, SLOT(updateActiveObject()));
 
-	updateGL();
 	this->setSelectMode(FFD_DEFORMER);
+
+	setMouseBinding(Qt::RightButton, FRAME, TRANSLATE);	
+	setMouseBinding(Qt::LeftButton, SELECT);
+
+	updateGL();
 }
 
 void MyDesigner::setActiveVoxelDeformer()
 {
+	clearButtons();
+	designWidget->voxelButton->setChecked(true);
+	this->transformMode = NONE_MODE;
+
 	activeDeformer = NULL;
 
 	Primitive * prim = ctrl()->getSelectedPrimitive(); if(!prim) return;
 	QSurfaceMesh* mesh = prim->m_mesh;
 
-	activeVoxelDeformer = new VoxelDeformer(mesh, 0.2);
+	activeVoxelDeformer = new VoxelDeformer(mesh, 0.1);
 
 	this->connect(activeVoxelDeformer, SIGNAL(meshDeformed()), this, SLOT(updateActiveObject()));
 
-	updateGL();
 	this->setSelectMode(VOXEL_DEFORMER);
+
+	setMouseBinding(Qt::RightButton, FRAME, TRANSLATE);	
+	setMouseBinding(Qt::LeftButton, SELECT);
+
+	updateGL();
+}
+
+void MyDesigner::drawStackStateChanged( int state )
+{
+	this->isDrawStacking = state;
+	if(isDrawStacking) updateOffset();
+	updateGL();
+}
+
+void MyDesigner::reloadActiveMesh()
+{
+	if(activeMesh)
+	{
+		clearButtons();
+	
+		selectMode = SELECT_NONE;
+		transformMode = NONE_MODE;
+		isMousePressed = false;
+		skyRadius = 1.0;
+
+		defCtrl = NULL;
+		activeDeformer = NULL;
+		activeVoxelDeformer = NULL;
+
+		QString * myPath = (QString *) activeMesh->ptr["filename"];
+		loadMesh(*myPath);
+	}
 }

@@ -35,9 +35,15 @@ public slots:
 
 	void clearLayoutItems(QLayout * layout);
 
+	// Tasks
+	void loadNextTask();
+	QString taskStyle( int state );
+
 private:
 	Ui::UserStudyAppClass ui;
 
+	QStringList tasksFileName;
+	QVector<QLabel *> tasksLabel;
 };
 
 
