@@ -10,6 +10,11 @@ MyDesigner * designer = NULL;
 
 #include "Screens/Client.h"
 
+// Theora player
+#include "Screens/videoplayer/gui_player/VideoWidget.h"
+#include "Screens/videoplayer/gui_player/VideoToolbar.h"
+VideoWidget * v = NULL;
+
 UserStudyApp::UserStudyApp(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
 {
@@ -20,13 +25,15 @@ UserStudyApp::UserStudyApp(QWidget *parent, Qt::WFlags flags)
 		ui.screens->setTabEnabled(i, false);
 	
 	// Connections
-	connect(ui.nextButtonWelcome, SIGNAL(clicked()), this, SLOT(nextButtonWelcome()));
-	connect(ui.nextButtonTutorial, SIGNAL(clicked()), this, SLOT(nextButtonTutorial()));
-	connect(ui.nextButtonDesign, SIGNAL(clicked()), this, SLOT(nextButtonDesign()));
-	connect(ui.nextButtonEvaluate, SIGNAL(clicked()), this, SLOT(nextButtonEvaluate()));
+	connect(ui.screens, SIGNAL(currentChanged(int)), SLOT(screenChanged(int)));
 
-	connect(ui.sendResultButton, SIGNAL(clicked()), this, SLOT(sendResultButton()));
-	connect(ui.saveResultButton, SIGNAL(clicked()), this, SLOT(saveResultButton()));
+	connect(ui.nextButtonWelcome, SIGNAL(clicked()), SLOT(nextButtonWelcome()));
+	connect(ui.nextButtonTutorial, SIGNAL(clicked()), SLOT(nextButtonTutorial()));
+	connect(ui.nextButtonDesign, SIGNAL(clicked()), SLOT(nextButtonDesign()));
+	connect(ui.nextButtonEvaluate, SIGNAL(clicked()), SLOT(nextButtonEvaluate()));
+
+	connect(ui.sendResultButton, SIGNAL(clicked()), SLOT(sendResultButton()));
+	connect(ui.saveResultButton, SIGNAL(clicked()), SLOT(saveResultButton()));
 
 	// Create custom widgets
 	designWidget = new Ui::DesignWidget();
@@ -41,12 +48,9 @@ UserStudyApp::UserStudyApp(QWidget *parent, Qt::WFlags flags)
 	tasksFileName << "data/knot01.obj";
 
 	// Show welcome screen
-	//setScreen(WELCOME_SCREEN);
-	nextButtonTutorial(); // to test Designer
+	setScreen(WELCOME_SCREEN);
+	//nextButtonTutorial(); // to test Designer
 	//nextButtonEvaluate(); // test Send data
-
-	// Hack: avoid dealing with Unicode here..
-	ui.checkmarkLabel->hide();
 }
 
 UserStudyApp::~UserStudyApp()
@@ -62,17 +66,34 @@ void UserStudyApp::nextButtonWelcome()
 	ui.screens->setCurrentWidget(ui.screens->widget(TUTORIAL_SCREEN));
 
 	// Load tutorial video
-	Phonon::MediaSource media(":/UserStudyApp/tutorial.mp4");
-	
+	if(!v)
+	{
+		v = new VideoWidget;
+		VideoToolbar * vt = new VideoToolbar;
+
+		v->loadVideo("data/tutorial.ogm"); 
+
+		// Connect
+		connect(vt->ui->playButton, SIGNAL(clicked()), v, SLOT(togglePlay()));
+		connect(vt, SIGNAL(valueChanged(int)), v, SLOT(seekVideo(int)));
+		connect(v, SIGNAL(setSliderValue(int)), vt->ui->slider, SLOT(setValue(int)));
+
+		ui.tutorialLayout->addWidget(v);
+		ui.tutorialLayout->addWidget(vt);
+	}
+
 	QApplication::restoreOverrideCursor();
 	QCoreApplication::processEvents();
-
-	ui.videoPlayer->play(media);
 }
 
 void UserStudyApp::nextButtonTutorial()
 {
+	if(v) v->stop();
+
 	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+
+	// Hack: avoid dealing with Unicode here..
+	ui.checkmarkLabel->hide();
 
 	// Add viewer
 	clearLayoutItems(designWidget->viewerAreaLayout);
@@ -121,18 +142,23 @@ void UserStudyApp::loadNextTask()
 
 	// Mark as in progress
 	int curr = tasksLabel.size() - tasksFileName.size();
-	tasksLabel[curr]->setStyleSheet(taskStyle(1));
+
+	if(curr < tasksLabel.size())
+		tasksLabel[curr]->setStyleSheet(taskStyle(1));
 
 	// Mark as done
-	if(curr > 0)
+	if(curr > 0  && curr < tasksLabel.size())
 	{
 		tasksLabel[curr-1]->setStyleSheet(taskStyle(2));
 		tasksLabel[curr-1]->setText(tasksLabel[curr-1]->text() + ui.checkmarkLabel->text());
 	}
 
-	designer->loadMesh(tasksFileName.front());
-	tasksFileName.pop_front();
-	
+	if(tasksFileName.size())
+	{
+		designer->loadMesh(tasksFileName.front());
+		tasksFileName.pop_front();
+	}
+
 	QApplication::restoreOverrideCursor();
 }
 
@@ -252,5 +278,18 @@ void UserStudyApp::clearLayoutItems(QLayout * layout)
 			delete item;
 		}
 		//delete w->layout();
+	}
+}
+
+void UserStudyApp::screenChanged(int newScreenIndex)
+{
+	// Stop video in all cases
+	if(v) v->stop();
+
+	// Check if we changed to tutorial screen, if so enable video
+	if(newScreenIndex == TUTORIAL_SCREEN)
+	{
+		if(v && v->stopped()) 
+			v->start();
 	}
 }

@@ -41,6 +41,7 @@ MyDesigner::MyDesigner( Ui::DesignWidget * useDesignWidget, QWidget * parent /*=
 	skyRadius = 1.0;
 	activeMesh = NULL;
 	isMousePressed = false;
+	loadedMeshHalfHight = 1.0;
 
 	fm = new QFontMetrics(QFont());
 
@@ -157,6 +158,8 @@ void MyDesigner::preDraw()
 
 void MyDesigner::drawShadows()
 {
+	if(!activeMesh) return;
+
 	double objectHeight = activeMesh->bbmax.z() - activeMesh->bbmin.z();
 
 	// N64 method :)
@@ -692,6 +695,8 @@ void MyDesigner::loadMesh( QString fileName )
 		}
 	}
 
+	loadedMeshHalfHight = (loadedMesh->bbmax.z() - loadedMesh->bbmin.z()) * -0.5;
+
 	setActiveObject(loadedMesh);
 }
 
@@ -1035,7 +1040,7 @@ void MyDesigner::beginUnderMesh()
 	if(isEmpty()) return;
 
 	glPushMatrix();
-	glTranslated(0,0,(activeMesh->bbmax.z() - activeMesh->bbmin.z()) * -0.5);
+	glTranslated(0,0, loadedMeshHalfHight);
 }
 
 void MyDesigner::endUnderMesh()
