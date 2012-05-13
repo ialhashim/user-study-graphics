@@ -149,7 +149,9 @@ void MyDesigner::preDraw()
 
 
 	beginUnderMesh();
-	drawCircleFade(Vec4d(0,0,0,0.25), 4); // Floor
+	double floorOpacity = 0.25; 
+	if(camera()->position().z < loadedMeshHalfHight) floorOpacity = 0.05;
+	drawCircleFade(Vec4d(0,0,0,floorOpacity), 4); // Floor
 	drawShadows();
 	endUnderMesh();
 
@@ -158,9 +160,7 @@ void MyDesigner::preDraw()
 
 void MyDesigner::drawShadows()
 {
-	if(!activeMesh) return;
-
-	double objectHeight = activeMesh->bbmax.z() - activeMesh->bbmin.z();
+	if(!activeMesh || camera()->position().z < loadedMeshHalfHight) return;
 
 	// N64 method :)
 	/*glDisable(GL_DEPTH_TEST);
@@ -193,7 +193,7 @@ void MyDesigner::drawShadows()
 	glScaled(1.1,1.1,0);
 	glPushMatrix();
 	glMultMatrixf((GLfloat *) floorShadow); /* Project the shadow. */
-	glColor4d(0,0,0,0.05);
+	glColor4d(0,0,0,0.04);
 	glDisable(GL_LIGHTING);
 	glDisable(GL_DEPTH_TEST);
 	for (QMap<QString, VBO>::iterator i = vboCollection.begin(); i != vboCollection.end(); ++i)
@@ -214,9 +214,6 @@ void MyDesigner::draw()
 	// The main object
 	drawObject();
 
-	// Draw stacked
-	if(activeOffset && isDrawStacking) drawStacking();
-
 	// Draw controller and primitives
 	if(ctrl() && (selectMode == CONTROLLER || selectMode == CONTROLLER_ELEMENT)) 
 		ctrl()->draw();
@@ -227,6 +224,9 @@ void MyDesigner::draw()
 
 	// Draw debug geometries
 	activeObject()->drawDebug();
+
+	// Draw stacked
+	if(activeOffset && isDrawStacking) drawStacking();
 
 	drawDebug();
 }
@@ -372,12 +372,19 @@ void MyDesigner::drawStacking()
 	double S = activeMesh->val["stackability"];
 	Vec3d delta = activeMesh->vec["stacking_shift"];
 
+	double stackingOpacity = 0.8;
+	if(isMousePressed) stackingOpacity = 0.3;
+
 	// Draw stacking direction
-	glColor4dv(Color(1, 1, 0, 0.8));
+	glEnable(GL_CULL_FACE);
+
+	glColor4dv(Color(1, 1, 0, stackingOpacity * 0.75));
 	SimpleDraw::DrawArrowDirected(Vec3d(0.0), delta.normalized());
 
 	glPushMatrix();
-	glColor4dv(Color(0.45,0.72,0.43,0.8));
+
+	// Stacking color
+	glColor4dv(Color(0.45,0.72,0.43,stackingOpacity));
 
 	// Top
 	glTranslated(delta[0],delta[1],delta[2]);
@@ -389,6 +396,9 @@ void MyDesigner::drawStacking()
 	activeObject()->simpleDraw(false);
 
 	glPopMatrix();
+
+	glDisable(GL_CULL_FACE);
+
 }
 
 void MyDesigner::drawObjectOutline()
@@ -402,7 +412,7 @@ void MyDesigner::drawObjectOutline()
 	glCullFace (GL_FRONT);
 
 	glDepthFunc (GL_LEQUAL);
-	glLineWidth (skyRadius / 2.0);
+	glLineWidth (Max(0.5, Min(5,skyRadius / 2.0)));
 
 	/* Draw wire object */
 	glColor3f (0.0f, 0.0f, 0.0f);
@@ -418,7 +428,9 @@ void MyDesigner::postDraw()
 	beginUnderMesh();
 
 	// Draw grid
-	glColor4d(0,0,0,0.1);
+	double gridOpacity = 0.1; 
+	if(camera()->position().z < loadedMeshHalfHight) gridOpacity = 0.05;
+	glColor4d(0,0,0,gridOpacity);
 	glLineWidth(1.0);
 	drawGrid(2, Min(10, Max(100, camera()->position().x / skyRadius)));
 
@@ -669,24 +681,23 @@ void MyDesigner::loadMesh( QString fileName )
 	// Reading QSegMesh
 	loadedMesh->read(fileName);
 
+	// Save filename
+	loadedMesh->ptr["filename"] = new QString(fileName);
+
 	// Set global ID for the mesh and all its segments
 	loadedMesh->setObjectName(newObjId);
 
-	// Load controller
-	loadedMesh->ptr["controller"] = new Controller(loadedMesh);
-	Controller * ctrl = (Controller *)loadedMesh->ptr["controller"];
-
-	// Save filename
-	loadedMesh->ptr["filename"] = new QString(fileName);
+	QElapsedTimer timer;
+	timer.start();
 
 	// Setup controller file name
 	fileName.chop(3);fileName += "ctrl";
 
 	if(QFileInfo(fileName).exists())
 	{
-		std::ifstream inF(qPrintable(fileName), std::ios::in);
-		ctrl->load(inF);
-		inF.close();
+		// Load controller
+		loadedMesh->ptr["controller"] = new Controller(loadedMesh, true, fileName);
+		Controller * ctrl = (Controller *)loadedMesh->ptr["controller"];
 
 		fileName.chop(4);fileName += "grp";
 		if(QFileInfo(fileName).exists())
@@ -695,6 +706,10 @@ void MyDesigner::loadMesh( QString fileName )
 			ctrl->loadGroups(inF);
 			inF.close();
 		}
+	}
+	else
+	{
+		loadedMesh->ptr["controller"] = new Controller(loadedMesh);
 	}
 
 	loadedMeshHalfHight = (loadedMesh->bbmax.z() - loadedMesh->bbmin.z()) * -0.5;
@@ -796,7 +811,6 @@ void MyDesigner::mouseReleaseEvent( QMouseEvent* e )
 	{
 		defCtrl->saveOriginal();
 		defCtrl->getFrame()->setOrientation(Quaternion());
-		updateGL();
 	}
 
 	if(transformMode == TRANSLATE_MODE)
@@ -807,7 +821,6 @@ void MyDesigner::mouseReleaseEvent( QMouseEvent* e )
 	if(transformMode == SCALE_MODE)
 	{
 		scaleDelta = Vec3d(1.0);
-		updateGL();
 	}
 
 	// View changer box area
@@ -877,9 +890,10 @@ void MyDesigner::mouseReleaseEvent( QMouseEvent* e )
 		if(activeOffset && isDrawStacking && selectMode != SELECT_NONE)
 		{
 			updateOffset();
-			updateGL();
 		}
 	}
+
+	updateGL();
 }
 
 void MyDesigner::mouseMoveEvent( QMouseEvent* e )
@@ -986,6 +1000,11 @@ void MyDesigner::mouseMoveEvent( QMouseEvent* e )
 	if(x > width() - scale && y > height() - scale)
 	{
 		updateGL();
+	}
+
+	if(e->buttons() & Qt::LeftButton)
+	{
+		isMousePressed = true;
 	}
 }
 
