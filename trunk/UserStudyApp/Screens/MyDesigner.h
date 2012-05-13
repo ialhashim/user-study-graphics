@@ -105,6 +105,8 @@ public:
 
 	QString viewTitle;
 
+	double loadedMeshHalfHight;
+
 public slots:
 	
 	// Select buttons

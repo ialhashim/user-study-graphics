@@ -39,6 +39,8 @@ public slots:
 	void loadNextTask();
 	QString taskStyle( int state );
 
+	void screenChanged(int newScreenIndex);
+
 private:
 	Ui::UserStudyAppClass ui;
 

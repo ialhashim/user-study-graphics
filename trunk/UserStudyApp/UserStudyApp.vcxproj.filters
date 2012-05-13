@@ -321,6 +321,18 @@
     <ClCompile Include="Screens\Client.cpp">
       <Filter>Screens\FinishScreen</Filter>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_VideoToolbar.cpp">
+      <Filter>MainWindow\Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_VideoToolbar.cpp">
+      <Filter>MainWindow\Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_VideoWidget.cpp">
+      <Filter>MainWindow\Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_VideoWidget.cpp">
+      <Filter>MainWindow\Generated Files\Release</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="userstudyMainWindow.ui">
@@ -376,6 +388,12 @@
     </CustomBuild>
     <CustomBuild Include="Screens\Client.h">
       <Filter>Screens\FinishScreen</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Screens\videoplayer\gui_player\VideoToolbar.h">
+      <Filter>Screens\TutorialScreen</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Screens\videoplayer\gui_player\VideoWidget.h">
+      <Filter>Screens\TutorialScreen</Filter>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
