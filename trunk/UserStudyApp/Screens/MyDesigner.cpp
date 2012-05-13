@@ -612,8 +612,10 @@ void MyDesigner::updateVBOs()
 			{
 				Surface_mesh::Vertex_property<Point>  points   = seg->vertex_property<Point>("v:point");
 				Surface_mesh::Vertex_property<Point>  vnormals = seg->vertex_property<Point>("v:normal");
-				Surface_mesh::Vertex_property<Color>  vcolors  = seg->vertex_property<Color>("v:color");			
-				seg->fillTrianglesList();
+				Surface_mesh::Vertex_property<Color>  vcolors  = seg->vertex_property<Color>("v:color");
+
+				if(!seg->triangles.size()) 
+					seg->fillTrianglesList();
 
 				// Create VBO 
 				vboCollection[objId] = VBO( seg->n_vertices(), points.data(), vnormals.data(), vcolors.data(), seg->triangles );		
@@ -1150,8 +1152,7 @@ void MyDesigner::transformCurve(bool modifySelect)
 	Controller * c = ctrl();
 	
 	if(!c || !c->getSelectedPrimitive())
-		if(c->getSelectedPrimitive()->selectedCurveId < 0)
-			return;
+		return;
 
 	if(!selection.isEmpty())
 	{

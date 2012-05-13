@@ -44,12 +44,12 @@ UserStudyApp::UserStudyApp(QWidget *parent, Qt::WFlags flags)
 	evalWidget->setupUi(ui.evaluateFrame);
 
 	// Prepare tasks
-	tasksFileName << "data/stool.obj";
+	tasksFileName << "data/table02_remeshed.obj";
 	tasksFileName << "data/knot01.obj";
 
 	// Show welcome screen
-	setScreen(WELCOME_SCREEN);
-	//nextButtonTutorial(); // to test Designer
+	//setScreen(WELCOME_SCREEN);
+	nextButtonTutorial(); // to test Designer
 	//nextButtonEvaluate(); // test Send data
 }
 
