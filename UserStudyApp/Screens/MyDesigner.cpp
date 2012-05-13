@@ -1149,7 +1149,7 @@ void MyDesigner::transformCurve(bool modifySelect)
 {
 	Controller * c = ctrl();
 	
-	if(!c || ! c->getSelectedPrimitive())
+	if(!c || !c->getSelectedPrimitive())
 		if(c->getSelectedPrimitive()->selectedCurveId < 0)
 			return;
 
