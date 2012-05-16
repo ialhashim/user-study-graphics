@@ -18,8 +18,8 @@ class Offset;
 
 enum ViewMode { VIEW, SELECTION, MODIFY };
 enum SelectMode { SELECT_NONE, MESH, VERTEX, EDGE, FACE,
-	CONTROLLER, CONTROLLER_ELEMENT, FFD_DEFORMER, VOXEL_DEFORMER };
-enum TransformMode { NONE_MODE, TRANSLATE_MODE, ROTATE_MODE, SCALE_MODE };
+	CONTROLLER, CONTROLLER_ELEMENT, FFD_DEFORMER, VOXEL_DEFORMER, STACK_DIR_MODE };
+enum TransformMode { NONE_MODE, TRANSLATE_MODE, ROTATE_MODE, SCALE_MODE};
 
 class MyDesigner : public QGLViewer{
 	Q_OBJECT
@@ -107,12 +107,15 @@ public:
 
 	double loadedMeshHalfHight;
 
+	ManipulatedFrame stackingDir;
+
 public slots:
 	
 	// Select buttons
 	void selectPrimitiveMode();
 	void selectCurveMode();
 	void selectCameraMode();
+	void selectStackingMode();
 
 	// Transform buttons
 	void moveMode();

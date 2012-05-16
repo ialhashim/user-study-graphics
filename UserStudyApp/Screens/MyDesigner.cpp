@@ -71,6 +71,12 @@ MyDesigner::MyDesigner( Ui::DesignWidget * useDesignWidget, QWidget * parent /*=
 
 	// Connect to show / hide stacking
 	connect(designWidget->showStacking, SIGNAL(stateChanged(int)), SLOT(drawStackStateChanged(int)));
+
+	// Stacking direction, turn off translation
+	AxisPlaneConstraint * c = new AxisPlaneConstraint;
+	c->setTranslationConstraintType(AxisPlaneConstraint::FORBIDDEN);
+	stackingDir.setConstraint(c);
+	stackingDir.setSpinningSensitivity(100.0);
 }
 
 void MyDesigner::init()
@@ -118,9 +124,15 @@ void MyDesigner::cameraMoved()
 {
 	if(camera()->type() != Camera::PERSPECTIVE)
 	{
-		viewTitle = "View";
-		camera()->setType(Camera::PERSPECTIVE);
-		updateGL();
+		Vec camPos = camera()->position();
+		double minAxis = Min(abs(camPos.x), Min(abs(camPos.y), abs(camPos.z)));
+
+		if(minAxis > 0.25)
+		{
+			viewTitle = "View";
+			camera()->setType(Camera::PERSPECTIVE);
+			updateGL();
+		}
 	}
 }
 
@@ -160,7 +172,7 @@ void MyDesigner::preDraw()
 
 void MyDesigner::drawShadows()
 {
-	if(!activeMesh || camera()->position().z < loadedMeshHalfHight) return;
+	if(!activeMesh || camera()->position().z < loadedMeshHalfHight || isDrawStacking) return;
 
 	// N64 method :)
 	/*glDisable(GL_DEPTH_TEST);
@@ -213,11 +225,7 @@ void MyDesigner::draw()
 
 	// The main object
 	drawObject();
-
-	// Draw controller and primitives
-	if(ctrl() && (selectMode == CONTROLLER || selectMode == CONTROLLER_ELEMENT)) 
-		ctrl()->draw();
-	
+		
 	// deformers
 	if(activeDeformer) activeDeformer->draw();
 	if(activeVoxelDeformer) activeVoxelDeformer->draw();
@@ -226,7 +234,14 @@ void MyDesigner::draw()
 	activeObject()->drawDebug();
 
 	// Draw stacked
-	if(activeOffset && isDrawStacking) drawStacking();
+	if(selectMode == STACK_DIR_MODE) isDrawStacking = true;
+	if(isDrawStacking && activeOffset) drawStacking();
+
+	// Draw controller and primitives
+	if(ctrl() && (selectMode == CONTROLLER || selectMode == CONTROLLER_ELEMENT)) 
+		ctrl()->draw();
+
+	glEnable(GL_BLEND);
 
 	drawDebug();
 }
@@ -378,9 +393,6 @@ void MyDesigner::drawStacking()
 	// Draw stacking direction
 	glEnable(GL_CULL_FACE);
 
-	glColor4dv(Color(1, 1, 0, stackingOpacity * 0.75));
-	SimpleDraw::DrawArrowDirected(Vec3d(0.0), delta.normalized());
-
 	glPushMatrix();
 
 	// Stacking color
@@ -396,6 +408,19 @@ void MyDesigner::drawStacking()
 	activeObject()->simpleDraw(false);
 
 	glPopMatrix();
+
+
+	glDisable(GL_DEPTH_TEST);
+
+	// Stacking direction
+	if(selectMode == STACK_DIR_MODE)
+		glColor4dv(Color(1, 1, 0, 1));
+	else
+		glColor4dv(Color(1, 1, 0, stackingOpacity * 0.75));
+
+	Vec dir = stackingDir.rotation() * Vec(0,0,1);
+	SimpleDraw::DrawArrowDirected(Vec3d(0.0), Vec3d(dir[0],dir[1],dir[2]));
+	glEnable(GL_DEPTH_TEST);
 
 	glDisable(GL_CULL_FACE);
 
@@ -478,7 +503,7 @@ void MyDesigner::drawViewChanger()
 
 	double scale = 1.0;
 	
-	std::vector<bool> hover(6, false);
+	std::vector<bool> hover(7, false);
 
 	int x = currMousePos2D.x(), y = currMousePos2D.y();
 	if(x > width() - size && y > height() - size)
@@ -492,6 +517,7 @@ void MyDesigner::drawViewChanger()
 		QRect corner(QPoint(32,45), box);
 		QRect backside(QPoint(64,18), box);
 		QRect back(QPoint(11,20), box);
+		QRect bottom(QPoint(30,60), box);
 
 		if(top.contains(p)) hover[0] = true;
 		if(front.contains(p)) hover[1] = true;
@@ -499,6 +525,7 @@ void MyDesigner::drawViewChanger()
 		if(corner.contains(p)) hover[3] = true;
 		if(backside.contains(p)) hover[4] = true;
 		if(back.contains(p)) hover[5] = true;
+		if(bottom.contains(p)) hover[6] = true;
 	}
 
 	glColor4d(1,1,0,1);
@@ -513,7 +540,9 @@ void MyDesigner::drawViewChanger()
 	Vec3d backside (-0.5,0,0);if(hover[4]) glColor4d(1,0,0,1);
 	SimpleDraw::DrawArrowDirected(backside, backside, scale,true,true);glColor4d(1,1,0,1);
 	Vec3d back (0,-0.5,0);if(hover[5]) glColor4d(1,0,0,1);
-	SimpleDraw::DrawArrowDirected(back, back, scale,true,true);
+	SimpleDraw::DrawArrowDirected(back, back, scale,true,true); glColor4d(1,1,0,1);
+	Vec3d bottom (0,0,-0.6);if(hover[6]) glColor4d(1,0,0,1);
+	SimpleDraw::DrawArrowDirected(bottom, bottom, scale,true,true);glColor4d(1,1,0,1);
 
 	glMatrixMode(GL_PROJECTION);glPopMatrix();
 	glMatrixMode(GL_MODELVIEW);glPopMatrix();
@@ -526,7 +555,7 @@ void MyDesigner::drawOSD()
 {
 	QStringList selectModeTxt, toolModeTxt;
 	selectModeTxt << "Camera" << "Mesh" << "Vertex" << "Edge" 
-		<< "Face" << "Primitive" << "Curve" << "FFD" << "Voxel";
+		<< "Face" << "Primitive" << "Curve" << "FFD" << "Voxel" << "Stacking Direction";
 	toolModeTxt << "None" << "Move" << "Rotate" << "Scale";
 
 	int paddingX = 15, paddingY = 5;
@@ -663,7 +692,8 @@ void MyDesigner::resetView()
 void MyDesigner::updateOffset()
 {
 	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-	activeOffset->getStackability(true);
+	Vec dir = stackingDir.rotation() * Vec(0,0,1);
+	activeOffset->computeStackability(Vec3d(dir[0],dir[1],dir[2]));
 	QApplication::restoreOverrideCursor();
 }
 
@@ -739,6 +769,8 @@ void MyDesigner::setActiveObject(QSegMesh* newMesh)
 	activeOffset = new Offset(hiddenViewer);
 	hiddenViewer->setActiveObject(activeMesh);
 	updateOffset();
+	
+	stackingDir.alignWithFrame(activeFrame);
 	
 	// Stack panel 
 	emit(objectInserted());
@@ -842,11 +874,19 @@ void MyDesigner::mouseReleaseEvent( QMouseEvent* e )
 		QRect corner(QPoint(32,45), box);
 		QRect backside(QPoint(64,18), box);
 		QRect back(QPoint(11,20), box);
+		QRect bottom(QPoint(30,70), box);
 
 		if(top.contains(p)){
 			Frame f(Vec(0,0,3*meshHeight), Quaternion());
 			camera()->interpolateTo(f,0.25);camera()->setType(Camera::ORTHOGRAPHIC);
 			viewTitle = "Top";
+		}
+
+		if(bottom.contains(p)){
+			Frame f(Vec(0,0,-3*meshHeight), Quaternion());
+			f.rotate(Quaternion(Vec(1,0,0), M_PI));
+			camera()->interpolateTo(f,0.25);camera()->setType(Camera::ORTHOGRAPHIC);
+			viewTitle = "Bottom";
 		}
 
 		if(front.contains(p)){
@@ -902,7 +942,12 @@ void MyDesigner::mouseMoveEvent( QMouseEvent* e )
 	currMousePos2D = e->pos();
 	camera()->convertClickToLine(currMousePos2D, currMouseOrigin, currMouseDir);
 
-	if(isMousePressed && defCtrl && e->buttons() & Qt::LeftButton && !(e->modifiers() & Qt::ShiftModifier))
+	if(e->buttons() & Qt::LeftButton)
+	{
+		isMousePressed = true;
+	}
+
+	if(isMousePressed && defCtrl && !(e->modifiers() & Qt::ShiftModifier))
 	{
 		Vec3d o(currMouseOrigin[0],currMouseOrigin[1],currMouseOrigin[2]);
 		Vec3d r(currMouseDir[0],currMouseDir[1],currMouseDir[2]);
@@ -1002,9 +1047,9 @@ void MyDesigner::mouseMoveEvent( QMouseEvent* e )
 		updateGL();
 	}
 
-	if(e->buttons() & Qt::LeftButton)
+	if(isMousePressed && selectMode == STACK_DIR_MODE)
 	{
-		isMousePressed = true;
+		updateGL();
 	}
 }
 
@@ -1022,6 +1067,7 @@ void MyDesigner::wheelEvent( QWheelEvent* e )
 			double s = 0.1 * (e->delta() / 120.0);
 			defCtrl->scaleUp(1 + s);
 
+			updateOffset();
 			updateGL();
 		}
 		break;
@@ -1086,18 +1132,18 @@ void MyDesigner::postSelection( const QPoint& point )
 	int selected = selectedName();
 
 	// General selection
-	if(selected == -1)
+	/*if(selected == -1)
 		selection.clear();
 	else
 	{
 		if(selection.contains( selected ))
 			selection.remove(selection.indexOf(selected));
 		else
-		{
+		{*/
 			selection.clear();
 			selection.push_back(selected); // to start from 0
-		}
-	}
+		/*}
+	}*/
 
 	// FFD and such deformers
 	if(activeDeformer && selectMode == FFD_DEFORMER){
@@ -1229,6 +1275,29 @@ void MyDesigner::selectCurveMode()
 	selectTool();
 }
 
+void MyDesigner::selectStackingMode()
+{
+	clearButtons();
+	designWidget->selectStackingButton->setChecked(true);
+
+	setMouseBinding(Qt::LeftButton, FRAME, ROTATE);
+	setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, CAMERA, ROTATE);
+
+	selection.clear();
+	ctrl()->selectPrimitive(-1);
+
+	selectMode = STACK_DIR_MODE;
+	transformMode = NONE_MODE;
+
+	this->displayMessage("You can now rotate the stacking direction", 1000);
+
+	isDrawStacking = true;
+	designWidget->showStacking->setChecked(true);
+
+
+	setManipulatedFrame(&stackingDir);
+}
+
 void MyDesigner::selectCameraMode()
 {
 	clearButtons();
@@ -1244,6 +1313,9 @@ void MyDesigner::selectCameraMode()
 	transformMode = NONE_MODE;
 
 	this->displayMessage("Freely move camera", 1000);
+
+	isDrawStacking = false;
+	designWidget->showStacking->setChecked(isDrawStacking);
 }
 
 void MyDesigner::selectTool()
@@ -1256,6 +1328,8 @@ void MyDesigner::selectTool()
 	if(selectMode == CONTROLLER_ELEMENT) designWidget->selectCurveButton->setChecked(true);
 	transformMode = NONE_MODE;
 	updateGL();
+
+	designWidget->showStacking->setChecked(isDrawStacking);
 }
 
 void MyDesigner::moveMode()

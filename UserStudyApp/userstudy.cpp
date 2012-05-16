@@ -44,8 +44,9 @@ UserStudyApp::UserStudyApp(QWidget *parent, Qt::WFlags flags)
 	evalWidget->setupUi(ui.evaluateFrame);
 
 	// Prepare tasks
-	tasksFileName << "data/table02_remeshed.obj";
 	tasksFileName << "data/knot01.obj";
+	tasksFileName << "data/table02_remeshed.obj";
+	
 
 	// Show welcome screen
 	//setScreen(WELCOME_SCREEN);
@@ -104,6 +105,7 @@ void UserStudyApp::nextButtonTutorial()
 	designer->connect(designWidget->selectPrimitiveButton, SIGNAL(clicked()), SLOT(selectPrimitiveMode()));
 	designer->connect(designWidget->selectCurveButton, SIGNAL(clicked()), SLOT(selectCurveMode()));
 	designer->connect(designWidget->selectCameraButton, SIGNAL(clicked()), SLOT(selectCameraMode()));
+	designer->connect(designWidget->selectStackingButton, SIGNAL(clicked()), SLOT(selectStackingMode()));
 
 	// Connect transformation tools buttons
 	designer->connect(designWidget->moveButton, SIGNAL(clicked()), SLOT(moveMode()));

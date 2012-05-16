@@ -27,7 +27,9 @@ HEADERS += ./Screens/MyDesigner.h \
     ./Screens/sphereDraw.h \
     ./Screens/Client.h \
     ./resource.h \
-    ./userstudy.h
+    ./userstudy.h \
+    ./Screens/videoplayer/gui_player/VideoToolbar.h \
+    ./Screens/videoplayer/gui_player/VideoWidget.h
 SOURCES += ./Screens/MyDesigner.cpp \
     ./Screens/project/GL/GLee.c \
     ./Screens/project/GL/VBO/VBO.cpp \
