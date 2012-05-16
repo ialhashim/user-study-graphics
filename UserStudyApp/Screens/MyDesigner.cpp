@@ -804,29 +804,29 @@ void MyDesigner::mousePressEvent( QMouseEvent* e )
 
 		if(transformMode == SCALE_MODE)
 		{
-			// Forbid everything
-			AxisPlaneConstraint * c = new AxisPlaneConstraint;
-			c->setRotationConstraintType(AxisPlaneConstraint::FORBIDDEN);
-			c->setTranslationConstraintType(AxisPlaneConstraint::FORBIDDEN);
-			defCtrl->getFrame()->setConstraint(c);
+			//// Forbid everything
+			//AxisPlaneConstraint * c = new AxisPlaneConstraint;
+			//c->setRotationConstraintType(AxisPlaneConstraint::FORBIDDEN);
+			//c->setTranslationConstraintType(AxisPlaneConstraint::FORBIDDEN);
+			//defCtrl->getFrame()->setConstraint(c);
 
-			Vec3d o(currMouseOrigin[0],currMouseOrigin[1],currMouseOrigin[2]);
-			Vec3d r(currMouseDir[0],currMouseDir[1],currMouseDir[2]);
+			//Vec3d o(currMouseOrigin[0],currMouseOrigin[1],currMouseOrigin[2]);
+			//Vec3d r(currMouseDir[0],currMouseDir[1],currMouseDir[2]);
 
-			Vec3d px = rayMeshIntersect(o, r, planeX(defCtrl->pos(), skyRadius));
-			Vec3d py = rayMeshIntersect(o, r, planeY(defCtrl->pos(), skyRadius));
-			Vec3d pz = rayMeshIntersect(o, r, planeZ(defCtrl->pos(), skyRadius));
+			//Vec3d px = rayMeshIntersect(o, r, planeX(defCtrl->pos(), skyRadius));
+			//Vec3d py = rayMeshIntersect(o, r, planeY(defCtrl->pos(), skyRadius));
+			//Vec3d pz = rayMeshIntersect(o, r, planeZ(defCtrl->pos(), skyRadius));
 
-			debugPoints.clear();
+			//debugPoints.clear();
 
-			Point p(0,0,0);
+			//Point p(0,0,0);
 
-			// If we got a hit
-			if(px.x() < DBL_MAX) p = px;
-			if(py.y() < DBL_MAX) p = py;
-			if(pz.z() < DBL_MAX) p = pz;
+			//// If we got a hit
+			//if(px.x() < DBL_MAX) p = px;
+			//if(py.y() < DBL_MAX) p = py;
+			//if(pz.z() < DBL_MAX) p = pz;
 
-			startScalePos = p;
+			//startScalePos = p;
 		}
 	}
 

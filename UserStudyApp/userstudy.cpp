@@ -44,9 +44,14 @@ UserStudyApp::UserStudyApp(QWidget *parent, Qt::WFlags flags)
 	evalWidget->setupUi(ui.evaluateFrame);
 
 	// Prepare tasks
-	tasksFileName << "data/knot01.obj";
-	tasksFileName << "data/table02_remeshed.obj";
-	
+	std::ifstream inF("tasks.txt", std::ios::in);
+	while (inF)
+	{
+		std::string filename;
+		inF >> filename;
+		if (filename.empty()) continue;
+		tasksFileName << filename.c_str();
+	}
 
 	// Show welcome screen
 	//setScreen(WELCOME_SCREEN);
