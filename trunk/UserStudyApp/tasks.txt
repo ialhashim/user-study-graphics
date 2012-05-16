@@ -1,0 +1,4 @@
+data/Tasks/cup.obj
+data/Tasks/cup-handle-01.obj
+data/Tasks/table-midbar.obj
+data/Tasks/table-sidebar.obj
