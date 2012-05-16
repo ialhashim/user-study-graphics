@@ -5,25 +5,33 @@
 TEMPLATE = app
 TARGET = UserStudyApp
 DESTDIR = ../
-QT += core gui multimedia network xml xmlpatterns phonon webkit opengl
-CONFIG += debug console
-DEFINES += QT_LARGEFILE_SUPPORT QT_MULTIMEDIA_LIB QT_XML_LIB QT_OPENGL_LIB QT_NETWORK_LIB QT_WEBKIT_LIB QT_XMLPATTERNS_LIB QT_PHONON_LIB
+QT += core gui multimedia network xml xmlpatterns webkit opengl
+CONFIG += release
+DEFINES += QT_LARGEFILE_SUPPORT QT_MULTIMEDIA_LIB QT_XML_LIB QT_OPENGL_LIB QT_NETWORK_LIB QT_WEBKIT_LIB QT_XMLPATTERNS_LIB THEORAVIDEO_STATIC
 INCLUDEPATH += ./GeneratedFiles \
-    ./GeneratedFiles/Debug \
+    ./GeneratedFiles/Release \
     . \
     ./Screens/project \
     ./Screens/project/GraphicsLibrary \
     ./Screens/project/GraphicsLibrary/Mesh/SurfaceMesh \
-    ./Screens/solver/umfpack_solver
-LIBS += -L"./Screens/project/GUI/Viewer/libQGLViewer/QGLViewer/lib" \
+    ./Screens/solver/umfpack_solver \
+    ./Screens/videoplayer \
+    ./Screens/videoplayer/theoraplayer/include/theoraplayer
+	
+	
+win32:LIBS += -L"./Screens/project/GUI/Viewer/libQGLViewer/QGLViewer/lib" \
     -lopengl32 \
     -lglu32 \
-    -lphonond4 \
-    -lQGLViewerd2
+    -lQGLViewer2 \
+    -l./Screens/videoplayer/ogg \
+    -l./Screens/videoplayer/vorbis \
+    -l./Screens/videoplayer/theora \
+    -l./Screens/videoplayer/theoraplayer
+	
 PRECOMPILED_HEADER = StdAfx.h
 DEPENDPATH += .
-MOC_DIR += ./GeneratedFiles/debug
-OBJECTS_DIR += debug
+MOC_DIR += ./GeneratedFiles/release
+OBJECTS_DIR += release
 UI_DIR += ./GeneratedFiles
 RCC_DIR += ./GeneratedFiles
 include(UserStudyApp.pri)
