@@ -45,6 +45,7 @@ private:
 	Ui::UserStudyAppClass ui;
 
 	QStringList tasksFileName;
+	QMap<QString, double> tasksTarget;
 	QVector<QLabel *> tasksLabel;
 };
 

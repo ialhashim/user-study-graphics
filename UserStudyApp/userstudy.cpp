@@ -48,9 +48,13 @@ UserStudyApp::UserStudyApp(QWidget *parent, Qt::WFlags flags)
 	while (inF)
 	{
 		std::string filename;
-		inF >> filename;
+		double target = 0.0;
+		inF >> filename >> target;
+
 		if (filename.empty()) continue;
+
 		tasksFileName << filename.c_str();
+		tasksTarget[filename.c_str()] = target;
 	}
 
 	// Show welcome screen
@@ -120,7 +124,7 @@ void UserStudyApp::nextButtonTutorial()
 	// Connect deformers buttons
 	designer->connect(designWidget->ffdButton, SIGNAL(clicked()), SLOT(setActiveFFDDeformer()));
 	designer->connect(designWidget->voxelButton, SIGNAL(clicked()), SLOT(setActiveVoxelDeformer()));
-	designer->connect(designWidget->resetButton, SIGNAL(clicked()), SLOT(reloadActiveMesh()));
+	designer->connect(designWidget->undoButton, SIGNAL(clicked()), SLOT(Undo()));
 
 	int numTasks = tasksFileName.size();
 
@@ -160,9 +164,15 @@ void UserStudyApp::loadNextTask()
 		tasksLabel[curr-1]->setText(tasksLabel[curr-1]->text() + ui.checkmarkLabel->text());
 	}
 
+	if(curr > 0)
+	{
+		designer->collectData();
+
+	}
+
 	if(tasksFileName.size())
 	{
-		designer->loadMesh(tasksFileName.front());
+		designer->loadMesh(tasksFileName.front(), tasksTarget[tasksFileName.front()]);
 		tasksFileName.pop_front();
 	}
 

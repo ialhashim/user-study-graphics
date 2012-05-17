@@ -9,6 +9,7 @@
 #include "project/Stacker/HiddenViewer.h"
 #include "project/Stacker/Offset.h"
 #include "project/Utility/SimpleDraw.h"
+#include "project/Utility/ColorMap.h"
 
 #include "MyDesigner.h"
 #define GL_MULTISAMPLE 0x809D
@@ -296,7 +297,7 @@ void MyDesigner::drawTool()
 
 			Vec3d delta = scaleDelta;
 
-			toolScale *= 0.5;
+			toolScale *= 0.25;
 
 			glEnable(GL_LIGHTING);
 			glColor4d(1,1,0,1);
@@ -387,8 +388,8 @@ void MyDesigner::drawStacking()
 	double S = activeMesh->val["stackability"];
 	Vec3d delta = activeMesh->vec["stacking_shift"];
 
-	double stackingOpacity = 0.8;
-	if(isMousePressed) stackingOpacity = 0.3;
+	double stackingOpacity = 0.3;
+	if(isMousePressed) stackingOpacity = 0.1;
 
 	// Draw stacking direction
 	glEnable(GL_CULL_FACE);
@@ -603,11 +604,55 @@ void MyDesigner::drawOSD()
 		renderText(x, y, osdMessages.at(i));
 	}
 
+	if(isDrawStacking)
+		drawStackability();
+
 	setForegroundColor(QColor(0,0,0));
 	QGLViewer::postDraw();
 }
 
-void MyDesigner::drawMessage(QString message, int x, int y, Vec4d backcolor)
+void MyDesigner::drawStackability()
+{
+	double ratio = stackingRatio;
+
+	QString currStack = QString::number(Min(100, int(ratio * 100)));
+
+	QString message = QString("Stackability target %1%").arg(currStack);
+
+	if(ratio > 0.99)
+		message += " - Excellent!";
+	else if(ratio > 0.75)
+		message += " - Very Good";
+	else if(ratio > 0.5)
+		message += " - Good";
+
+	uchar rgb[3];	
+	ColorMap::jetColorMap(rgb, 3 - ratio, 0.0, 3.0);
+	QColor c = QColor::fromRgb(rgb[0],rgb[1],rgb[2]);
+
+	double x = 15;
+	double y = height() - fm->height() * 3;
+
+	Vec4d currColor(c.redF(), c.greenF(), c.blueF(), 1.0);
+
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_LIGHTING);
+
+	this->startScreenCoordinatesSystem();
+	glEnable(GL_BLEND);
+	drawRoundRect(x, y, 150, 15, Vec4d(0,0,0,0.05), 0);
+	drawRoundRect(x, y, Min(150, ratio * 150), 15, currColor, 0);
+	this->stopScreenCoordinatesSystem();
+
+	glColor4dv(Vec4d(0,0,0,0.75));
+	drawText( x, y - fm->height()*2, message);
+
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_LIGHTING);
+
+}
+
+void MyDesigner::drawMessage(QString message, int x, int y, Vec4d backcolor, Vec4d frontcolor)
 {
 	int pixelsWide = fm->width(message);
 	int pixelsHigh = fm->height() * 1.5;
@@ -619,7 +664,7 @@ void MyDesigner::drawMessage(QString message, int x, int y, Vec4d backcolor)
 	drawRoundRect(x, y,pixelsWide + margin, pixelsHigh * 1.5, backcolor, 5);
 	this->stopScreenCoordinatesSystem();
 
-	glColor4dv(Vec4d(1,1,1,1));
+	glColor4dv(frontcolor);
 	drawText( x + margin * 0.5, y - (pixelsHigh * 0.5), message);
 }
 
@@ -695,10 +740,22 @@ void MyDesigner::updateOffset()
 	Vec dir = stackingDir.rotation() * Vec(0,0,1);
 	activeOffset->computeStackability(Vec3d(dir[0],dir[1],dir[2]));
 	QApplication::restoreOverrideCursor();
+
+	// Compute ratio
+	double curr = activeMesh->val["stackability"];
+	double target = activeMesh->val["target-stackability"];
+	stackingRatio = (curr / target);
+
+	if(stackingRatio > 0.99) 
+		designWidget->nextTaskMessage->setVisible(true);
+	else
+		designWidget->nextTaskMessage->setVisible(false);
 }
 
-void MyDesigner::loadMesh( QString fileName )
+void MyDesigner::loadMesh( QString fileName, double targetS /*= 0.5*/ )
 {
+	QString originalFileName = fileName;
+
 	if(fileName.isEmpty() || !QFileInfo(fileName).exists()) return;
 
 	selection.clear();
@@ -742,9 +799,21 @@ void MyDesigner::loadMesh( QString fileName )
 		loadedMesh->ptr["controller"] = new Controller(loadedMesh);
 	}
 
+	loadedMesh->val["target-stackability"] = targetS;
+
 	loadedMeshHalfHight = (loadedMesh->bbmax.z() - loadedMesh->bbmin.z()) * -0.5;
 
 	setActiveObject(loadedMesh);
+
+	QElapsedTimer * t = new QElapsedTimer ;
+	loadedMesh->ptr["timer"] = t;
+	t->start();
+
+	numEdits = 0;
+
+	isDrawStacking = false;
+
+	updateGL();
 }
 
 void MyDesigner::setActiveObject(QSegMesh* newMesh)
@@ -772,6 +841,10 @@ void MyDesigner::setActiveObject(QSegMesh* newMesh)
 	
 	stackingDir.alignWithFrame(activeFrame);
 	
+	// Undo
+	undoStates.clear();
+	SaveUndo();
+
 	// Stack panel 
 	emit(objectInserted());
 }
@@ -827,6 +900,11 @@ void MyDesigner::mousePressEvent( QMouseEvent* e )
 			//if(pz.z() < DBL_MAX) p = pz;
 
 			//startScalePos = p;
+		}
+
+		if(transformMode != NONE_MODE && selectMode != SELECT_NONE)
+		{
+			SaveUndo();
 		}
 	}
 
@@ -972,7 +1050,7 @@ void MyDesigner::mouseMoveEvent( QMouseEvent* e )
 
 		if(transformMode == SCALE_MODE)
 		{
-			currScalePos = p;
+			/*currScalePos = p;
 
 			Primitive * prim = ctrl()->getSelectedPrimitive(); if(!prim) return;
 		
@@ -1031,7 +1109,7 @@ void MyDesigner::mouseMoveEvent( QMouseEvent* e )
 
 			scaleDelta = delta;
 
-			updateGL();
+			updateGL();*/
 		}
 
 		if(transformMode == TRANSLATE_MODE)
@@ -1129,6 +1207,9 @@ void MyDesigner::drawWithNames()
 
 void MyDesigner::postSelection( const QPoint& point )
 {
+	if(currMousePos2D.x() > width() - 90 && currMousePos2D.y() > height() - 90)
+		return;
+
 	int selected = selectedName();
 
 	// General selection
@@ -1140,8 +1221,12 @@ void MyDesigner::postSelection( const QPoint& point )
 			selection.remove(selection.indexOf(selected));
 		else
 		{*/
+		if(selectMode != CONTROLLER_ELEMENT)
+		{
 			selection.clear();
+			ctrl()->selectPrimitive(-1);
 			selection.push_back(selected); // to start from 0
+		}
 		/*}
 	}*/
 
@@ -1268,6 +1353,14 @@ void MyDesigner::selectPrimitiveMode()
 
 void MyDesigner::selectCurveMode()
 {
+	if(ctrl()->getSelectedPrimitive() == NULL)
+	{
+		selectMode = CONTROLLER;
+		selectTool();
+		displayMessage("Select a part first!");
+		return;
+	}
+
 	setMouseBinding(Qt::LeftButton, SELECT);
 	setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, CAMERA, ROTATE);
 
@@ -1496,4 +1589,48 @@ void MyDesigner::reloadActiveMesh()
 		QString * myPath = (QString *) activeMesh->ptr["filename"];
 		loadMesh(*myPath);
 	}
+}
+
+void MyDesigner::SaveUndo()
+{
+	undoStates.push(ctrl()->getShapeState());
+
+	if(undoStates.size() > 20)
+		undoStates.pop_front();
+
+	numEdits++;
+}
+
+void MyDesigner::Undo()
+{
+	if(undoStates.isEmpty()) return;
+
+	ctrl()->setShapeState(undoStates.pop());
+
+	clearButtons();
+	selectMode = SELECT_NONE;
+	transformMode = NONE_MODE;
+
+	activeMesh->build_up();
+
+	updateActiveObject();
+	updateGL();
+}
+
+int MyDesigner::editTime()
+{
+	if(!activeMesh) return -1;
+	QElapsedTimer  * t = (QElapsedTimer  *) activeMesh->ptr["timer"];
+	return t->elapsed();
+}
+
+void MyDesigner::collectData()
+{
+	QMap<QString, QString> data;
+
+	data["mesh-name"] = *((QString *) activeMesh->ptr["filename"]);
+	data["edit-time"] = QString::number(editTime());
+	data["edit-num-operations"] = QString::number(numEdits);
+	data["stackability-ratio"] = QString::number(stackingRatio);
+	data["state"] = "";
 }
