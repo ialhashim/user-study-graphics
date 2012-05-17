@@ -1,4 +1,5 @@
-data/Tasks/cup.obj
-data/Tasks/cup-handle-01.obj
-data/Tasks/table-midbar.obj
-data/Tasks/table-sidebar.obj
+data/Tasks/IKEA-cup.obj 0.7
+data/Tasks/cup.obj 0.5
+data/Tasks/cup-handle-01.obj 0.5
+data/Tasks/table-midbar.obj 0.5
+data/Tasks/table-sidebar.obj 0.5

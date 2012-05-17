@@ -1,10 +1,12 @@
 #pragma once
 
 #include <QQueue>
+#include <QStack>
 
 #include "project/GraphicsLibrary/Basic/Plane.h"
 #include "project/GL/VBO/VBO.h"
 #include "project/GUI/Viewer/libQGLViewer/QGLViewer/qglviewer.h"
+#include "project/Stacker/ShapeState.h"
 
 using namespace qglviewer;
 class QSegMesh;
@@ -38,6 +40,7 @@ public:
 	void beginUnderMesh();
 	void endUnderMesh();
 	void drawOSD();
+	void drawStackability();
 
 	// VBOS
 	QMap<QString, VBO> vboCollection;
@@ -76,6 +79,10 @@ public:
 	void setActiveObject(QSegMesh* newMesh);
 
 	Controller * ctrl();
+	
+	double stackingRatio;
+
+	QStack<ShapeState> undoStates;
 
 	// Deformer
 	ManipulatedFrame * activeFrame;
@@ -83,7 +90,7 @@ public:
 	QFFD * activeDeformer;
 	VoxelDeformer * activeVoxelDeformer;
 
-	void loadMesh(QString fileName);
+	void loadMesh(QString fileName, double targetS = 0.5);
 
 	// TEXT ON SCREEN
 	QQueue<QString> osdMessages;
@@ -108,6 +115,10 @@ public:
 	double loadedMeshHalfHight;
 
 	ManipulatedFrame stackingDir;
+
+	// Data
+	int editTime();
+	int numEdits;
 
 public slots:
 	
@@ -139,6 +150,11 @@ public slots:
 
 	void reloadActiveMesh();
 
+	void Undo();
+	void SaveUndo();
+
+	void collectData();
+
 private:
 	// DEBUG:
 	std::vector<Vec> debugPoints;
@@ -148,7 +164,7 @@ private:
 
 private:
 	void drawCircleFade(double * color, double radius = 1.0);
-	void drawMessage(QString message, int x = 10, int y = 10, Vec4d backcolor = Vec4d(0,0,0,0.25));
+	void drawMessage(QString message, int x = 10, int y = 10, Vec4d backcolor = Vec4d(0,0,0,0.25), Vec4d frontcolor = Vec4d(1.0));
 	void drawShadows();
 	void drawViewChanger();
 	double skyRadius;
