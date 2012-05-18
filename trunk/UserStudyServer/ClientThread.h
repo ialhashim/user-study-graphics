@@ -14,10 +14,15 @@ public:
 
 	QString address;
 
+	int waitForInput( QTcpSocket *socket );
+	QString readLine(QTcpSocket *socket );
+
 private:
 	int socketDescriptor;
 
 signals:
 	void error(QTcpSocket::SocketError socketError);
 	void clientAddress(QString);
+
+
 };
