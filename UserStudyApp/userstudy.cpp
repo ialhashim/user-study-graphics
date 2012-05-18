@@ -5,6 +5,7 @@
 #include <QFileDialog>
 #include <QUuid>
 #include <QHostInfo>
+#include <QMessageBox>
 
 #include "Screens/MyDesigner.h"
 MyDesigner * designer = NULL;
@@ -17,6 +18,9 @@ MyDesigner * designer = NULL;
 #include "Screens/videoplayer/gui_player/VideoWidget.h"
 #include "Screens/videoplayer/gui_player/VideoToolbar.h"
 VideoWidget * v = NULL;
+
+class SleeperThread : public QThread
+{public:static void msleep(unsigned long msecs){QThread::msleep(msecs);}};
 
 UserStudyApp::UserStudyApp(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
@@ -282,6 +286,8 @@ void UserStudyApp::nextButtonEvaluate()
 
 void UserStudyApp::sendResultButton()
 {
+	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+
 	Client * client = new Client(resultsString(), this);
 }
 

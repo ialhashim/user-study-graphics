@@ -9,19 +9,23 @@
 #include <QUuid>
 #include <QDateTime>
 #include <QHostInfo>
+#include <QApplication>
 
 
 Client::Client(QString dataSend, QObject * parent) : QTcpSocket(parent)
 {
 	serverStatus = "Not connected.";
 
-	connect(this, SIGNAL(gotServerIP()), SLOT(tryConnect()));
 	connect(this, SIGNAL(error(QAbstractSocket::SocketError)), SLOT(manageError(QAbstractSocket::SocketError)));
+
+	connect(this, SIGNAL(gotServerIP()), SLOT(tryConnect()));
 	connect(this, SIGNAL(connected()), SLOT(sendData()));
 
 	getServerIP();
 
 	this->data = dataSend;
+
+	isSentData = false;
 }
 
 void Client::getServerIP()
@@ -30,6 +34,7 @@ void Client::getServerIP()
 
 	QNetworkAccessManager * am = new QNetworkAccessManager(this);
 	QNetworkReply *reply = am->get(QNetworkRequest(QUrl(externalUrl + "getip.php")));
+
 	connect(am, SIGNAL(finished(QNetworkReply*)), SLOT(receiveServerIP(QNetworkReply*)));
 }
 
@@ -63,20 +68,33 @@ void Client::receiveServerIP( QNetworkReply *reply )
 void Client::tryConnect()
 {
 	std::cout << "Connecting to: " << qPrintable(serverIP) << "\n";
+
 	connectToHost(serverIP, serverPort.toInt());
-	if(!waitForConnected(10000)){
-		QMessageBox::information(0, "Network error", "Sorry, cannot connect to server.");
+	
+	waitForConnected(5000);
+	
+	if(state() != QAbstractSocket::ConnectedState)
+	{
+		QApplication::setOverrideCursor(QCursor(Qt::ArrowCursor));
+
+		QMessageBox::information(0, "Network warning", "If you got 'Successfully sent to server' ignore this warning. Otherwise, try again one more time or use the method below.");
+		this->isSentData = false;
 		this->close();
 	}
 }
 
 void Client::sendData()
 {
+	this->isSentData = true;
+
 	if(state() == QAbstractSocket::ConnectedState)
 	{
 		write(qPrintable(data));
 
 		this->waitForBytesWritten();
+		this->waitForDisconnected(5000);
+
+		QApplication::setOverrideCursor(QCursor(Qt::ArrowCursor));
 
 		QMessageBox::information(0, "Thank you", "Successfully sent to server!");
 	}
