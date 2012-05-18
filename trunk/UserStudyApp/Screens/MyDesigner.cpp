@@ -86,6 +86,7 @@ MyDesigner::MyDesigner( Ui::DesignWidget * useDesignWidget, QWidget * parent /*=
 	c->setTranslationConstraintType(AxisPlaneConstraint::FORBIDDEN);
 	stackingDir.setConstraint(c);
 	stackingDir.setSpinningSensitivity(100.0);
+
 }
 
 void MyDesigner::init()

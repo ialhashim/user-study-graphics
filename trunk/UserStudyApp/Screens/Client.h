@@ -15,6 +15,8 @@ public:
 
 	QString data;
 
+	bool isSentData;
+
 public slots:
 	void getServerIP();
 	void receiveServerIP(QNetworkReply *reply);
