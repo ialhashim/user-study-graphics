@@ -10,7 +10,8 @@
 #include <QDateTime>
 #include <QHostInfo>
 
-Client::Client(QObject * parent) : QTcpSocket(parent)
+
+Client::Client(QString dataSend, QObject * parent) : QTcpSocket(parent)
 {
 	serverStatus = "Not connected.";
 
@@ -19,6 +20,8 @@ Client::Client(QObject * parent) : QTcpSocket(parent)
 	connect(this, SIGNAL(connected()), SLOT(sendData()));
 
 	getServerIP();
+
+	this->data = dataSend;
 }
 
 void Client::getServerIP()
@@ -61,7 +64,7 @@ void Client::tryConnect()
 {
 	std::cout << "Connecting to: " << qPrintable(serverIP) << "\n";
 	connectToHost(serverIP, serverPort.toInt());
-	if(!waitForConnected(3000)){
+	if(!waitForConnected(10000)){
 		QMessageBox::information(0, "Network error", "Sorry, cannot connect to server.");
 		this->close();
 	}
@@ -71,27 +74,9 @@ void Client::sendData()
 {
 	if(state() == QAbstractSocket::ConnectedState)
 	{
-		QDomDocument doc("Submission");
-		QDomElement root = doc.createElement("Submission");
-		doc.appendChild(root);
+		write(qPrintable(data));
 
-		// Submission ID
-		QDomElement submitId = doc.createElement("submit-id");
-		root.appendChild(submitId);
-		QString unique = QUuid::createUuid().toString() + QString::number(QDateTime().toTime_t());
-		QString id = QString::number(qHash(unique));
-		submitId.appendChild(doc.createTextNode("submission-" + id));
-
-		// Machine name
-		QDomElement fromAddress = doc.createElement("host-name");
-		root.appendChild(fromAddress);
-		fromAddress.appendChild(doc.createTextNode(QHostInfo::localHostName() + "." + QHostInfo::localDomainName()));
-
-		// Results..
-
-		// Send stream
-		QTextStream resultStream(this);
-		resultStream << doc.toString();
+		this->waitForBytesWritten();
 
 		QMessageBox::information(0, "Thank you", "Successfully sent to server!");
 	}

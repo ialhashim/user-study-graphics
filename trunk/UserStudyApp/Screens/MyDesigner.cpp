@@ -14,6 +14,8 @@
 #include "MyDesigner.h"
 #define GL_MULTISAMPLE 0x809D
 
+#include <QApplication>
+#include <QDesktopWidget>
 #include <QKeyEvent>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -27,6 +29,8 @@ QFontMetrics * fm;
 #include "drawRoundRect.h"
 #include "drawPlane.h"
 #include "drawCube.h"
+
+#include "study_global.h"
 
 MyDesigner::MyDesigner( Ui::DesignWidget * useDesignWidget, QWidget * parent /*= 0*/ ) : QGLViewer(parent)
 {
@@ -52,8 +56,8 @@ MyDesigner::MyDesigner( Ui::DesignWidget * useDesignWidget, QWidget * parent /*=
 	setManipulatedFrame(activeFrame);
 
 	// TEXT ON SCREEN
-	timer = new QTimer(this);
-	connect(timer, SIGNAL(timeout()), SLOT(dequeueLastMessage()));
+	timerScreenText = new QTimer(this);
+	connect(timerScreenText, SIGNAL(timeout()), SLOT(dequeueLastMessage()));
 
 	connect(camera()->frame(), SIGNAL(manipulated()), SLOT(cameraMoved()));
 
@@ -68,6 +72,10 @@ MyDesigner::MyDesigner( Ui::DesignWidget * useDesignWidget, QWidget * parent /*=
 	designWidget->specialWidgetLayout->addWidget(hiddenDock);
 	hiddenDock->setFloating(true);
 	hiddenDock->setWindowOpacity(0.0);
+
+	int x = qApp->desktop()->availableGeometry().width();
+	hiddenDock->move(QPoint(x - hiddenDock->width(),0)); //Move the hidden dock to the top right conner
+
 	isDrawStacking = false;
 
 	// Connect to show / hide stacking
@@ -104,6 +112,8 @@ void MyDesigner::init()
 	setShortcut( STEREO, Qt::SHIFT+Qt::Key_S );
 
 	camera()->frame()->setSpinningSensitivity(100.0);
+
+	if (!VBO::isVBOSupported()) std::cout << "VBO is not supported." << std::endl;
 }
 
 void MyDesigner::setupLights()
@@ -236,7 +246,7 @@ void MyDesigner::draw()
 
 	// Draw stacked
 	if(selectMode == STACK_DIR_MODE) isDrawStacking = true;
-	if(isDrawStacking && activeOffset) drawStacking();
+	if(activeOffset) drawStacking();
 
 	// Draw controller and primitives
 	if(ctrl() && (selectMode == CONTROLLER || selectMode == CONTROLLER_ELEMENT)) 
@@ -376,7 +386,6 @@ void MyDesigner::drawObject()
 		glPopAttrib ();
 	} 
 	else{// Fall back
-		std::cout << "VBO is not supported." << std::endl;
 		activeObject()->simpleDraw();
 	}
 }
@@ -391,40 +400,46 @@ void MyDesigner::drawStacking()
 	double stackingOpacity = 0.3;
 	if(isMousePressed) stackingOpacity = 0.1;
 
+	
 	// Draw stacking direction
 	glEnable(GL_CULL_FACE);
 
-	glPushMatrix();
+	if(isDrawStacking)
+	{
+		glPushMatrix();
 
-	// Stacking color
-	glColor4dv(Color(0.45,0.72,0.43,stackingOpacity));
+		// Stacking color
+		glColor4dv(Color(0.45,0.72,0.43,stackingOpacity));
+	
 
-	// Top
-	glTranslated(delta[0],delta[1],delta[2]);
-	activeObject()->simpleDraw(false);
+		// Top
+		glTranslated(delta[0],delta[1],delta[2]);
+		activeObject()->simpleDraw(false);
 
-	// Bottom
-	delta *= -2;
-	glTranslated(delta[0],delta[1],delta[2]);
-	activeObject()->simpleDraw(false);
-
-	glPopMatrix();
+		// Bottom
+		delta *= -2;
+		glTranslated(delta[0],delta[1],delta[2]);
+		activeObject()->simpleDraw(false);
 
 
-	glDisable(GL_DEPTH_TEST);
+		glPopMatrix();
 
-	// Stacking direction
-	if(selectMode == STACK_DIR_MODE)
-		glColor4dv(Color(1, 1, 0, 1));
-	else
-		glColor4dv(Color(1, 1, 0, stackingOpacity * 0.75));
 
-	Vec dir = stackingDir.rotation() * Vec(0,0,1);
-	SimpleDraw::DrawArrowDirected(Vec3d(0.0), Vec3d(dir[0],dir[1],dir[2]));
-	glEnable(GL_DEPTH_TEST);
+		glDisable(GL_DEPTH_TEST);
+
+		// Stacking direction
+		if(selectMode == STACK_DIR_MODE)
+			glColor4dv(Color(1, 1, 0, 1));
+		else
+			glColor4dv(Color(1, 1, 0, stackingOpacity * 0.75));
+
+		Vec dir = stackingDir.rotation() * Vec(0,0,1);
+		SimpleDraw::DrawArrowDirected(Vec3d(0.0), Vec3d(dir[0],dir[1],dir[2]));
+		glEnable(GL_DEPTH_TEST);
+	
+	}
 
 	glDisable(GL_CULL_FACE);
-
 }
 
 void MyDesigner::drawObjectOutline()
@@ -604,7 +619,7 @@ void MyDesigner::drawOSD()
 		renderText(x, y, osdMessages.at(i));
 	}
 
-	if(isDrawStacking)
+	//if(isDrawStacking)
 		drawStackability();
 
 	setForegroundColor(QColor(0,0,0));
@@ -754,11 +769,13 @@ void MyDesigner::updateOffset()
 
 void MyDesigner::loadMesh( QString fileName, double targetS /*= 0.5*/ )
 {
+	clearButtons();
+
+	selection.clear();
+
 	QString originalFileName = fileName;
 
 	if(fileName.isEmpty() || !QFileInfo(fileName).exists()) return;
-
-	selection.clear();
 
 	QString newObjId = QFileInfo(fileName).fileName();
 	newObjId.chop(4);
@@ -773,10 +790,7 @@ void MyDesigner::loadMesh( QString fileName, double targetS /*= 0.5*/ )
 
 	// Set global ID for the mesh and all its segments
 	loadedMesh->setObjectName(newObjId);
-
-	QElapsedTimer timer;
-	timer.start();
-
+	
 	// Setup controller file name
 	fileName.chop(3);fileName += "ctrl";
 
@@ -805,15 +819,20 @@ void MyDesigner::loadMesh( QString fileName, double targetS /*= 0.5*/ )
 
 	setActiveObject(loadedMesh);
 
-	QElapsedTimer * t = new QElapsedTimer ;
-	loadedMesh->ptr["timer"] = t;
-	t->start();
+	isDrawStacking = false;
+	designWidget->showStacking->setChecked(isDrawStacking);
+
+	stackingDir.setRotation(Quaternion());
+	setManipulatedFrame(activeFrame);
+
+	updateOffset();
+
+	updateGL();
 
 	numEdits = 0;
 
-	isDrawStacking = false;
-
-	updateGL();
+	// Timing
+	globalTimer->restart();
 }
 
 void MyDesigner::setActiveObject(QSegMesh* newMesh)
@@ -1005,7 +1024,7 @@ void MyDesigner::mouseReleaseEvent( QMouseEvent* e )
 	}
 	else
 	{
-		if(activeOffset && isDrawStacking && selectMode != SELECT_NONE)
+		if(activeOffset && selectMode != SELECT_NONE)
 		{
 			updateOffset();
 		}
@@ -1142,8 +1161,10 @@ void MyDesigner::wheelEvent( QWheelEvent* e )
 		{
 			if(!defCtrl) break;
 
+			SaveUndo();
+
 			double s = 0.1 * (e->delta() / 120.0);
-			defCtrl->scaleUp(1 + s);
+			defCtrl->scaleUp(1 + s);		
 
 			updateOffset();
 			updateGL();
@@ -1275,7 +1296,6 @@ void MyDesigner::transformPrimitive(bool modifySelect)
 		if(selected == -1) 
 		{
 			transformMode = NONE_MODE;
-			clearButtons();
 			designWidget->selectPrimitiveButton->setChecked(true);
 		}
 		
@@ -1336,6 +1356,11 @@ Controller * MyDesigner::ctrl()
 
 void MyDesigner::selectPrimitiveMode()
 {
+	clearButtons();
+	setManipulatedFrame(activeFrame);
+
+	if(activeMesh == NULL) return;
+
 	setMouseBinding(Qt::LeftButton, SELECT);
 	setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, CAMERA, ROTATE);
 
@@ -1353,6 +1378,11 @@ void MyDesigner::selectPrimitiveMode()
 
 void MyDesigner::selectCurveMode()
 {
+	clearButtons();
+	setManipulatedFrame(activeFrame);
+
+	if(activeMesh == NULL) return;
+
 	if(ctrl()->getSelectedPrimitive() == NULL)
 	{
 		selectMode = CONTROLLER;
@@ -1371,6 +1401,9 @@ void MyDesigner::selectCurveMode()
 void MyDesigner::selectStackingMode()
 {
 	clearButtons();
+
+	if(activeMesh == NULL) return;
+
 	designWidget->selectStackingButton->setChecked(true);
 
 	setMouseBinding(Qt::LeftButton, FRAME, ROTATE);
@@ -1387,13 +1420,16 @@ void MyDesigner::selectStackingMode()
 	isDrawStacking = true;
 	designWidget->showStacking->setChecked(true);
 
-
 	setManipulatedFrame(&stackingDir);
 }
 
 void MyDesigner::selectCameraMode()
 {
 	clearButtons();
+	setManipulatedFrame(activeFrame);
+
+	if(activeMesh == NULL) return;
+
 	designWidget->selectCameraButton->setChecked(true);
 	
 	setMouseBinding(Qt::ShiftModifier | Qt::LeftButton, SELECT);
@@ -1413,10 +1449,11 @@ void MyDesigner::selectCameraMode()
 
 void MyDesigner::selectTool()
 {
+	if(activeMesh == NULL) return;
+
 	activeDeformer = NULL;
 	activeVoxelDeformer = NULL;
 
-	clearButtons();
 	if(selectMode == CONTROLLER) designWidget->selectPrimitiveButton->setChecked(true);
 	if(selectMode == CONTROLLER_ELEMENT) designWidget->selectCurveButton->setChecked(true);
 	transformMode = NONE_MODE;
@@ -1427,6 +1464,8 @@ void MyDesigner::selectTool()
 
 void MyDesigner::moveMode()
 {
+	clearButtons();
+
 	setMouseBinding(Qt::LeftButton, FRAME, TRANSLATE);
 	setMouseBinding(Qt::RightButton, CAMERA, TRANSLATE);
 	transformMode = TRANSLATE_MODE;
@@ -1435,6 +1474,8 @@ void MyDesigner::moveMode()
 
 void MyDesigner::rotateMode()
 {
+	clearButtons();
+
 	setMouseBinding(Qt::LeftButton, FRAME, ROTATE);
 	setMouseBinding(Qt::ControlModifier | Qt::LeftButton, FRAME, SCREEN_ROTATE);
 
@@ -1444,6 +1485,8 @@ void MyDesigner::rotateMode()
 
 void MyDesigner::scaleMode()
 {
+	clearButtons();
+
 	setMouseBinding(Qt::LeftButton, FRAME, NO_MOUSE_ACTION);
 	transformMode = SCALE_MODE;
 	scaleDelta = Vec3d(1.0);
@@ -1454,8 +1497,6 @@ void MyDesigner::toolMode()
 {
 	activeDeformer = NULL;
 	activeVoxelDeformer = NULL;
-
-	clearButtons();
 
 	if(selection.empty())
 	{
@@ -1475,10 +1516,14 @@ void MyDesigner::toolMode()
 		if(transformMode == ROTATE_MODE) designWidget->rotateButton->setChecked(true);
 		if(transformMode == SCALE_MODE) designWidget->scaleButton->setChecked(true);
 
+		// Connect to QManualDeformer
 		if(selectMode == CONTROLLER) transformPrimitive(false);
 		if(selectMode == CONTROLLER_ELEMENT) transformCurve(false);
 
 		this->displayMessage("Press shift to move camera");
+
+		if(transformMode == SCALE_MODE)
+			this->displayMessage("Use your mouse wheel to scale a curve", 3000);
 	}
 
 	updateGL();
@@ -1505,7 +1550,7 @@ void MyDesigner::clearButtons()
 void MyDesigner::print( QString message, long age )
 {
 	osdMessages.enqueue(message);
-	timer->start(age);
+	timerScreenText->start(age);
 	updateGL();
 }
 
@@ -1520,6 +1565,9 @@ void MyDesigner::dequeueLastMessage()
 void MyDesigner::setActiveFFDDeformer()
 {
 	clearButtons();
+
+	if(activeMesh == NULL) return;
+
 	designWidget->ffdButton->setChecked(true);
 	this->transformMode = NONE_MODE;
 
@@ -1544,6 +1592,9 @@ void MyDesigner::setActiveFFDDeformer()
 void MyDesigner::setActiveVoxelDeformer()
 {
 	clearButtons();
+
+	if(activeMesh == NULL) return;
+
 	designWidget->voxelButton->setChecked(true);
 	this->transformMode = NONE_MODE;
 
@@ -1575,8 +1626,6 @@ void MyDesigner::reloadActiveMesh()
 {
 	if(activeMesh)
 	{
-		clearButtons();
-	
 		selectMode = SELECT_NONE;
 		transformMode = NONE_MODE;
 		isMousePressed = false;
@@ -1595,23 +1644,26 @@ void MyDesigner::SaveUndo()
 {
 	undoStates.push(ctrl()->getShapeState());
 
-	if(undoStates.size() > 20)
-		undoStates.pop_front();
+	//if(undoStates.size() > 30)
+	//	undoStates.pop_front();
 
 	numEdits++;
 }
 
 void MyDesigner::Undo()
 {
-	if(undoStates.isEmpty()) return;
-
-	ctrl()->setShapeState(undoStates.pop());
-
 	clearButtons();
+
+	if(undoStates.isEmpty() || activeMesh == NULL) return;
+
+	if(undoStates.size() > 1)
+		ctrl()->setShapeState(undoStates.pop());
+
 	selectMode = SELECT_NONE;
 	transformMode = NONE_MODE;
 
-	activeMesh->build_up();
+	activeMesh->update_face_normals();
+	activeMesh->update_vertex_normals();
 
 	updateActiveObject();
 	updateGL();
@@ -1619,18 +1671,27 @@ void MyDesigner::Undo()
 
 int MyDesigner::editTime()
 {
-	if(!activeMesh) return -1;
-	QElapsedTimer  * t = (QElapsedTimer  *) activeMesh->ptr["timer"];
-	return t->elapsed();
+	return globalTimer->elapsed();
 }
 
-void MyDesigner::collectData()
+QMap<QString, QString> MyDesigner::collectData()
 {
 	QMap<QString, QString> data;
 
-	data["mesh-name"] = *((QString *) activeMesh->ptr["filename"]);
-	data["edit-time"] = QString::number(editTime());
-	data["edit-num-operations"] = QString::number(numEdits);
-	data["stackability-ratio"] = QString::number(stackingRatio);
-	data["state"] = "";
+	if(activeMesh)
+	{
+		data["mesh-name"] = *((QString *) activeMesh->ptr["filename"]);
+		data["edit-time"] = QString::number(editTime());
+		data["edit-num-operations"] = QString::number(numEdits);
+		data["stackability-ratio"] = QString::number(stackingRatio);
+		Vec3d stackShift = activeMesh->vec["stacking_shift"];
+		data["stacking-shift"] = QString("%1 %2 %3").arg(stackShift[0]).arg(stackShift[1]).arg((stackShift[2])); 
+
+		if(activeOffset) activeOffset->computeStackability();
+
+		data["stackability"] = QString::number(activeMesh->val["stackability"]);
+		data["controller"] = ctrl()->serialize();
+	}
+
+	return data;
 }

@@ -2,6 +2,9 @@
 #include <QtGui/QApplication>
 #include <QGLFormat>
 #include <QTextCodec>
+#include <QTime>
+
+QTime * globalTimer = NULL;
 
 int main(int argc, char *argv[])
 {
@@ -14,6 +17,10 @@ int main(int argc, char *argv[])
 	QGLFormat glf = QGLFormat::defaultFormat();
 	glf.setSamples(8);
 	QGLFormat::setDefaultFormat(glf);
+
+	// Timing
+	globalTimer = new QTime;
+	globalTimer->start();
 
 	UserStudyApp w;
 	w.show();

@@ -94,7 +94,7 @@ public:
 
 	// TEXT ON SCREEN
 	QQueue<QString> osdMessages;
-	QTimer *timer;
+	QTimer *timerScreenText;
 
 	// Mouse state
 	bool isMousePressed;
@@ -119,6 +119,8 @@ public:
 	// Data
 	int editTime();
 	int numEdits;
+
+	QMap<QString, QString> collectData();
 
 public slots:
 	
@@ -152,9 +154,7 @@ public slots:
 
 	void Undo();
 	void SaveUndo();
-
-	void collectData();
-
+	
 private:
 	// DEBUG:
 	std::vector<Vec> debugPoints;
