@@ -1,5 +1,3 @@
-data/Tasks/IKEA-cup.obj 0.7
-data/Tasks/cup.obj 0.5
-data/Tasks/cup-handle-01.obj 0.5
-data/Tasks/table-midbar.obj 0.5
-data/Tasks/table-sidebar.obj 0.5
+data/Tutorial/simple_cup.obj 0.5
+data/Tutorial/simple_box.obj 0.5
+

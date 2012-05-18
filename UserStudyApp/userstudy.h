@@ -21,6 +21,8 @@ public:
 	Ui::DesignWidget * designWidget;
 	Ui::EvaluateWidget * evalWidget;
 
+	QString resultsString();
+
 public slots:
 	void nextButtonWelcome();
 	void nextButtonTutorial();
@@ -44,9 +46,10 @@ public slots:
 private:
 	Ui::UserStudyAppClass ui;
 
-	QStringList tasksFileName;
+	QStringList tasksFileName, tasksFiles;
 	QMap<QString, double> tasksTarget;
 	QVector<QLabel *> tasksLabel;
+	QMap<QString, QMap<QString, QString> > taskResults;
 };
 
 

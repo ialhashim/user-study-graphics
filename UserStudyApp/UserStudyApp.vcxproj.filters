@@ -427,6 +427,9 @@
     <ClInclude Include="Screens\drawCube.h">
       <Filter>Screens\DesignScreen\utility</Filter>
     </ClInclude>
+    <ClInclude Include="study_global.h">
+      <Filter>MainWindow</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources\UserStudyApp.rc">

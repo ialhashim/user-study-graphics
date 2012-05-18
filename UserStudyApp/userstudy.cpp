@@ -2,6 +2,9 @@
 #include <phonon/phonon>
 #include <QRadioButton>
 #include <QFileInfo>
+#include <QFileDialog>
+#include <QUuid>
+#include <QHostInfo>
 
 #include "Screens/MyDesigner.h"
 MyDesigner * designer = NULL;
@@ -53,13 +56,15 @@ UserStudyApp::UserStudyApp(QWidget *parent, Qt::WFlags flags)
 
 		if (filename.empty()) continue;
 
+		tasksFiles << filename.c_str();
 		tasksFileName << filename.c_str();
+		
 		tasksTarget[filename.c_str()] = target;
 	}
 
 	// Show welcome screen
-	//setScreen(WELCOME_SCREEN);
-	nextButtonTutorial(); // to test Designer
+	setScreen(WELCOME_SCREEN);
+	//nextButtonTutorial(); // to test Designer
 	//nextButtonEvaluate(); // test Send data
 }
 
@@ -91,6 +96,8 @@ void UserStudyApp::nextButtonWelcome()
 		ui.tutorialLayout->addWidget(v);
 		ui.tutorialLayout->addWidget(vt);
 	}
+
+	printf("Video widget size: %d x %d \n", v->size().width(), v->size().height());
 
 	QApplication::restoreOverrideCursor();
 	QCoreApplication::processEvents();
@@ -165,14 +172,17 @@ void UserStudyApp::loadNextTask()
 	}
 
 	if(curr > 0)
-	{
-		designer->collectData();
-
-	}
-
+		taskResults[tasksFiles[curr-1]] = designer->collectData();
+	
 	if(tasksFileName.size())
 	{
-		designer->loadMesh(tasksFileName.front(), tasksTarget[tasksFileName.front()]);
+		QFileInfo info(tasksFileName.front());
+
+		if(info.exists())
+		{
+			designer->loadMesh(tasksFileName.front(), tasksTarget[tasksFileName.front()]);
+		}
+
 		tasksFileName.pop_front();
 	}
 
@@ -185,9 +195,9 @@ QString UserStudyApp::taskStyle( int state )
 
 	switch(state)
 	{
-	case 0: return padding + "border: 2px solid grey; border-radius: 5px; background: rgb(200, 200, 200); color: LightGray;";
-	case 1: return padding + "border: 3px solid red; border-radius: 5px; background: rgb(255, 170, 127);";
-	case 2: return padding + "border: 2px solid green; border-radius: 5px; background: rgb(170, 255, 127);";
+		case 0: return padding + "border: 2px solid grey; border-radius: 5px; background: rgb(200, 200, 200); color: LightGray;";
+		case 1: return padding + "border: 3px solid Gold; border-radius: 5px; background: rgb(255, 255, 127);";
+		case 2: return padding + "border: 2px solid green; border-radius: 5px; background: rgb(170, 255, 127);";
 	}
 
 	return "";
@@ -196,17 +206,24 @@ QString UserStudyApp::taskStyle( int state )
 void UserStudyApp::nextButtonDesign()
 {
 	// Don't proceed while there are still tasks
-	if(tasksFileName.size() > 0)
-	{
+	if(tasksFileName.size() > 0){
 		loadNextTask();
 		return;
 	}
 	else
 	{
+		// Last task
+		taskResults[tasksFiles.last()] = designer->collectData();
+
 		tasksLabel.last()->setStyleSheet(taskStyle(2));
 		tasksLabel.last()->setText(tasksLabel.last()->text() + ui.checkmarkLabel->text());
 		QCoreApplication::processEvents();
 	}
+
+	// Skip evaluation for now
+	ui.screens->setTabEnabled(FINISH_SCREEN, true);
+	setScreen(FINISH_SCREEN);
+	return;
 
 	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
@@ -265,12 +282,64 @@ void UserStudyApp::nextButtonEvaluate()
 
 void UserStudyApp::sendResultButton()
 {
-	Client * client = new Client(this);
+	Client * client = new Client(resultsString(), this);
 }
 
 void UserStudyApp::saveResultButton()
 {
+	QString filename = QFileDialog::getSaveFileName(this, "Data file", "", "Data file (*.data)");
 
+	QFile File(filename);
+
+	if ( File.open( QIODevice::WriteOnly | QIODevice::Text ) ) 
+	{
+		QTextStream TextStream(&File);
+		TextStream << resultsString();
+	}
+
+	File.close();
+}
+
+QString UserStudyApp::resultsString()
+{
+	QDomDocument doc("Submission");
+	QDomElement root = doc.createElement("Submission");
+	doc.appendChild(root);
+
+	// Submission ID
+	QDomElement submitId = doc.createElement("submit-id");
+	root.appendChild(submitId);
+	QString unique = QUuid::createUuid().toString() + QString::number(QDateTime().toTime_t());
+	QString id = QString::number(qHash(unique));
+	submitId.appendChild(doc.createTextNode("submission-" + id));
+
+	// Machine name
+	QDomElement fromAddress = doc.createElement("host-name");
+	root.appendChild(fromAddress);
+	fromAddress.appendChild(doc.createTextNode(QHostInfo::localHostName() + "." + QHostInfo::localDomainName()));
+
+	// Results..
+	QMapIterator<QString, QMap<QString, QString> > i(taskResults);
+	while (i.hasNext()) {
+		i.next();
+
+		QDomElement task = doc.createElement(i.key());
+		root.appendChild(task);
+
+		// Items of each task
+		QMapIterator<QString, QString> j(i.value());
+		while (j.hasNext()) {
+			j.next();
+
+			QDomElement taskItem = doc.createElement(j.key());
+			task.appendChild(taskItem);
+
+			taskItem.appendChild(doc.createTextNode(j.value()));
+		}
+
+	}
+
+	return doc.toString();
 }
 
 QWidget * UserStudyApp::getScreen( SCREENS screenIndex )
