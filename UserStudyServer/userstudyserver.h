@@ -30,6 +30,7 @@ public slots:
 	void broadcastIP(QNetworkReply *reply);
 	void startServer();
 	void startedServer();
+	void processResult();
 
 signals:
 	void gotIP();
