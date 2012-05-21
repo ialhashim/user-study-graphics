@@ -18,7 +18,7 @@ int ClientThread::waitForInput( QTcpSocket *socket )
 		
 		bytesAvail = 0;
 
-		if (socket->waitForReadyRead(100)) {
+		if (socket->waitForReadyRead()) {
 			bytesAvail = socket->bytesAvailable();
 		}
 	}
@@ -58,6 +58,9 @@ void ClientThread::run()
 		emit error(tcpSocket.error());
 		return;
 	}
+
+	std::cout << "IPs = " << qPrintable(tcpSocket.localAddress().toString()) 
+		<< ", " << qPrintable(tcpSocket.peerAddress().toString())  << "\n";
 
 	//tcpSocket.waitForReadyRead();
 
