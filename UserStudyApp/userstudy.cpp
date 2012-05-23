@@ -19,6 +19,8 @@ MyDesigner * designer = NULL;
 #include "Screens/videoplayer/gui_player/VideoToolbar.h"
 VideoWidget * v = NULL;
 
+bool isVideo = false;
+
 class SleeperThread : public QThread
 {public:static void msleep(unsigned long msecs){QThread::msleep(msecs);}};
 
@@ -39,7 +41,7 @@ UserStudyApp::UserStudyApp(QWidget *parent, Qt::WFlags flags)
 	connect(ui.nextButtonDesign, SIGNAL(clicked()), SLOT(nextButtonDesign()));
 	connect(ui.nextButtonEvaluate, SIGNAL(clicked()), SLOT(nextButtonEvaluate()));
 
-	connect(ui.sendResultButton, SIGNAL(clicked()), SLOT(sendResultButton()));
+//	connect(ui.sendResultButton, SIGNAL(clicked()), SLOT(sendResultButton()));
 	connect(ui.saveResultButton, SIGNAL(clicked()), SLOT(saveResultButton()));
 
 	// Create custom widgets
@@ -51,6 +53,8 @@ UserStudyApp::UserStudyApp(QWidget *parent, Qt::WFlags flags)
 	evalWidget->setupUi(ui.evaluateFrame);
 
 	// Prepare tasks
+	QStringList filenames;
+	QMap<QString, double> targets;	
 	std::ifstream inF("tasks.txt", std::ios::in);
 	while (inF)
 	{
@@ -60,11 +64,26 @@ UserStudyApp::UserStudyApp(QWidget *parent, Qt::WFlags flags)
 
 		if (filename.empty()) continue;
 
-		tasksFiles << filename.c_str();
-		tasksFileName << filename.c_str();
-		
-		tasksTarget[filename.c_str()] = target;
+		filenames << filename.c_str();		
+		targets[filename.c_str()] = target;
 	}
+
+	// IKEA-cup, cup-handle, table-skirt, chair, one from [ stool, table-middlebar, chair-armrest ]
+	srand ( time(NULL) );
+	std::vector<int> idx;
+	idx.push_back(0);
+	idx.push_back(1);
+	idx.push_back(2);
+	idx.push_back(3);
+	idx.push_back(rand() % 3 + 4);
+
+	foreach (int i, idx)
+	{
+		QString selectedFile = filenames[i];
+		tasksFiles.push_back(selectedFile);
+		tasksTarget[selectedFile] = targets[selectedFile];
+	}
+	tasksFileName = tasksFiles; // Will be modified
 
 	// Show welcome screen
 	setScreen(WELCOME_SCREEN);
@@ -90,12 +109,17 @@ void UserStudyApp::nextButtonWelcome()
 		v = new VideoWidget;
 		VideoToolbar * vt = new VideoToolbar;
 
-		v->loadVideo("data/tutorial.ogm"); 
+		isVideo = QFileInfo("data/tutorial.ogm").exists();
 
-		// Connect
-		connect(vt->ui->playButton, SIGNAL(clicked()), v, SLOT(togglePlay()));
-		connect(vt, SIGNAL(valueChanged(int)), v, SLOT(seekVideo(int)));
-		connect(v, SIGNAL(setSliderValue(int)), vt->ui->slider, SLOT(setValue(int)));
+		if(isVideo)
+		{
+			v->loadVideo("data/tutorial.ogm"); 
+
+			// Connect
+			connect(vt->ui->playButton, SIGNAL(clicked()), v, SLOT(togglePlay()));
+			connect(vt, SIGNAL(valueChanged(int)), v, SLOT(seekVideo(int)));
+			connect(v, SIGNAL(setSliderValue(int)), vt->ui->slider, SLOT(setValue(int)));
+		}
 
 		ui.tutorialLayout->addWidget(v);
 		ui.tutorialLayout->addWidget(vt);
@@ -109,7 +133,7 @@ void UserStudyApp::nextButtonWelcome()
 
 void UserStudyApp::nextButtonTutorial()
 {
-	if(v) v->stop();
+	if(isVideo && v) v->stop();
 
 	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 

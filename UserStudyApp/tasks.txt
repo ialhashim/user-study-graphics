@@ -1,3 +1,7 @@
-data/Tutorial/simple_cup.obj 0.5
-data/Tutorial/simple_box.obj 0.5
-
+data/Tasks/IKEA-cup.obj 0.68
+data/Tasks/cup-handle.obj 0.51
+data/Tasks/table-skirt.obj 0.80
+data/Tasks/chair.obj 0.65
+data/Tasks/stool.obj 0.8
+data/Tasks/table-middlebar.obj 0.65
+data/Tasks/chair-armrest.obj 0.65

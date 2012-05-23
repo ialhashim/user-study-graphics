@@ -1492,6 +1492,8 @@ void MyDesigner::scaleMode()
 	transformMode = SCALE_MODE;
 	scaleDelta = Vec3d(1.0);
 	toolMode();
+
+	this->displayMessage("* Please SCROLL THE MOUSE to scale *", 5000);
 }
 
 void MyDesigner::toolMode()

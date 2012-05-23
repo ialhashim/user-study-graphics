@@ -31,6 +31,7 @@ public slots:
 	void startServer();
 	void startedServer();
 	void processResult();
+	void processResult2();
 
 signals:
 	void gotIP();

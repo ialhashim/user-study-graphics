@@ -21,7 +21,7 @@
     <item>
      <widget class="QTabWidget" name="screens">
       <property name="currentIndex">
-       <number>0</number>
+       <number>4</number>
       </property>
       <widget class="QWidget" name="WelcomeScreen">
        <attribute name="title">
@@ -73,7 +73,7 @@
                <item>
                 <widget class="QLabel" name="label_5">
                  <property name="text">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:9pt;&quot;&gt;In this study, you will be presented with several shapes that need to be edited in order for them to stack more properly. A tight stacking can help save space for objects such as kitchenware or furniture.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:9pt;&quot;&gt;This application contain the following sections:&lt;/span&gt;&lt;/p&gt;&lt;ul style=&quot;margin-top: 0px; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; -qt-list-indent: 1;&quot;&gt;&lt;li style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Tutorial&lt;/span&gt; - a short video that will help you navigate through our editing tool. Make sure you watch the entire clip.&lt;/li&gt;&lt;li style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Design &lt;/span&gt;- an interactive 3D editing tool with part selection and transformation. You will be given several tasks to try and accomplish. If a task is difficult you can skip it.&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;At the end of the study please press the 'Send' button to send us your results or save the results to a file and send it to the given email address.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;We hope you enjoy your time with our fun tool!&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:9pt;&quot;&gt;In this study, you will be presented with several shapes that need to be edited in order for them to stack more properly. A tight stacking can help save space for objects such as kitchenware or furniture.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:9pt;&quot;&gt;This application contains the following sections:&lt;/span&gt;&lt;/p&gt;&lt;ul style=&quot;margin-top: 0px; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; -qt-list-indent: 1;&quot;&gt;&lt;li style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Tutorial&lt;/span&gt; - a short video that will help you navigate through our editing tool. Make sure you watch the entire clip.&lt;/li&gt;&lt;li style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Design &lt;/span&gt;- an interactive 3D editing tool with part selection and transformation. You will be given several tasks to try and accomplish. &lt;br/&gt;&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;At the end of the study please press the 'Send' button to send us your results or save the results to a file and send it to the given email address.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;We hope you enjoy your time with our fun tool!&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                  <property name="alignment">
                   <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
@@ -536,109 +536,17 @@ QPushButton:pressed{
         <property name="horizontalSpacing">
          <number>6</number>
         </property>
-        <item row="2" column="1">
-         <layout class="QVBoxLayout" name="verticalLayout_10">
-          <property name="leftMargin">
-           <number>200</number>
-          </property>
-          <property name="topMargin">
-           <number>20</number>
-          </property>
-          <property name="rightMargin">
-           <number>200</number>
-          </property>
-          <property name="bottomMargin">
-           <number>20</number>
-          </property>
-          <item>
-           <widget class="QPushButton" name="sendResultButton">
-            <property name="minimumSize">
-             <size>
-              <width>200</width>
-              <height>45</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>200</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QPushButton{
-	background:qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 #b6d14c, stop:1 #83a01c);
-	color: white;
-	border: 1px solid #97B134;
-	font-family: 'Open Sans', sans-serif;
-	font-size: 24px;
-    border-radius: 5px;
-}
-
-QPushButton:hover{
-    background:qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 #bbda4c, stop:1 #83a01d);
-}
-
-QPushButton:pressed{
-   background:qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 #83a01c, stop:1 #b6d14c);
-}</string>
-            </property>
-            <property name="text">
-             <string>Send</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
         <item row="0" column="1">
-         <spacer name="verticalSpacer_3">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="6" column="1">
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>80</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="4" column="1">
-         <widget class="QLabel" name="label">
-          <property name="text">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Alternatively, you can send us the results file to &lt;/span&gt;&lt;a href=&quot;mailto:space.saver@gmail.com?Subject=Results&quot;&gt;&lt;span style=&quot; font-size:12pt; text-decoration: underline; color:#0000ff;&quot;&gt;graphics.user.study@gmail.com&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
-          <property name="wordWrap">
-           <bool>true</bool>
-          </property>
-          <property name="openExternalLinks">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
          <widget class="QLabel" name="label_2">
           <property name="text">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:20pt;&quot;&gt;Thank you!&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Please make sure you submit your results by clicking the send button bellow:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:20pt;&quot;&gt;Thank you!&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Please make sure you save your results by clicking the button below and send the result file to &lt;/span&gt;&lt;a href=&quot;mailto:space.saver@gmail.com?Subject=Results&quot;&gt;&lt;span style=&quot; font-size:12pt; text-decoration: underline; color:#0000ff;&quot;&gt;graphics.user.study@gmail.com.&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="wordWrap">
            <bool>true</bool>
           </property>
          </widget>
         </item>
-        <item row="2" column="0">
+        <item row="1" column="0">
          <spacer name="horizontalSpacer_2">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -654,20 +562,7 @@ QPushButton:pressed{
           </property>
          </spacer>
         </item>
-        <item row="3" column="1">
-         <spacer name="verticalSpacer_2">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="2" column="2">
+        <item row="1" column="2">
          <spacer name="horizontalSpacer">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -683,7 +578,17 @@ QPushButton:pressed{
           </property>
          </spacer>
         </item>
-        <item row="5" column="1">
+        <item row="3" column="1">
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>* By clicking this button, you agree to give us the right to collect and use the data about your experience of using this tool. We don't collect any of your personal infomation.</string>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
          <layout class="QVBoxLayout" name="verticalLayout_11">
           <property name="leftMargin">
            <number>200</number>
