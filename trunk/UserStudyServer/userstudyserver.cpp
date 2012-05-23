@@ -6,6 +6,7 @@
 #include <QFileDialog>
 #include <QDir>
 #include <QDomDocument>
+#include <iostream>
 
 UserStudyServer::UserStudyServer(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
@@ -19,7 +20,7 @@ UserStudyServer::UserStudyServer(QWidget *parent, Qt::WFlags flags)
 	connect(this, SIGNAL(sentIP()), SLOT(startedServer()));
 	connect(&server, SIGNAL(message(QString)), SLOT(Log(QString)));
 
-	connect(ui.processResultButton, SIGNAL(clicked()), SLOT(processResult()));
+	connect(ui.processResultButton, SIGNAL(clicked()), SLOT(processResult2()));
 
 	Log("Click start");
 	ui.serverNameLabel->setText("Server not started.");
@@ -109,35 +110,33 @@ void UserStudyServer::processResult()
 	// XML file
 	QStringList fileNames =  QFileDialog::getOpenFileNames(0, "Result file", "", "Results Files (*.xml)"); 
 
+	QFileInfo fi(fileNames.front());
+	QDir parentDir(fi.absoluteDir().path());
+
 	foreach(QString fileName, fileNames)
 	{
 		QFile xmlFile(fileName); xmlFile.open(QIODevice::ReadOnly | QIODevice::Text);
 		QString xmlString = xmlFile.readAll();
 		xmlString.replace("data/Tasks/","");
 		QDomDocument doc; doc.setContent(xmlString);
-		QFileInfo fi(fileName);
 
 		// Submitter name
 		QString submitName = fi.baseName();
-
-		// Clean up name
 		if(submitName.contains("_")){
 			QStringList sl = submitName.split("_");
 			submitName = sl.last();
 		}
 
-		// Create folder
-		QDir parentDir(fi.absoluteDir().path());
+		// Create folder and file
 		parentDir.mkdir(submitName);
 		QString outDirPath = parentDir.path() + "/" + submitName + "/";
-
-		// Pick first object result
-		QDomElement e = doc.firstChildElement().firstChildElement();
-
 		QFile csv(outDirPath + submitName + "_data.csv");
 		csv.open(QIODevice::WriteOnly | QIODevice::Text);
 		csv.write("Mesh,Time,Stackability,Ratio,Edits,Shift\n");
 
+
+		// Pick first object result
+		QDomElement e = doc.firstChildElement().firstChildElement();
 		while(!e.isNull())
 		{
 			if(e.tagName().endsWith(".obj"))
@@ -166,8 +165,82 @@ void UserStudyServer::processResult()
 			e = e.nextSiblingElement();
 		}
 
+		// Close 
 		csv.close();
+	}
+}
 
+void UserStudyServer::processResult2()
+{
+	// XML file
+	QStringList fileNames =  QFileDialog::getOpenFileNames(0, "Result file", "", "Results Files (*.xml)"); 
+
+	QFileInfo fi(fileNames.front());
+	QDir parentDir(fi.absoluteDir().path());
+
+	// Save (time, stackability) pair for each shape
+	QMap<QString, QFile*> time_stackability;
+	QStringList shapes;
+	shapes << "IKEA-cup.obj" << "chair-armrest.obj" << "chair.obj" << "cup-handle.obj" 
+		<< "table-skirt.obj" << "table-middlebar.obj" << "stool.obj";
+	parentDir.mkdir("time-stackability");
+	QString outputDir = parentDir.path() + "/time-stackability/";
+	foreach (QString shapeID, shapes)
+	{
+		time_stackability[shapeID] =  new QFile(outputDir + shapeID + ".csv");
+		time_stackability[shapeID]->open(QIODevice::WriteOnly | QIODevice::Text);
+		time_stackability[shapeID]->write("time,stackability\n");
+	}
+
+
+	foreach(QString fileName, fileNames)
+	{
+		QFile xmlFile(fileName); xmlFile.open(QIODevice::ReadOnly | QIODevice::Text);
+		QString xmlString = xmlFile.readAll(); xmlFile.close();
+		xmlString.replace("data/Tasks/","");
+		QDomDocument doc; doc.setContent(xmlString);
+
+		// Submitter name
+		QFileInfo fi_foo(fileName);
+		QString submitName = fi_foo.baseName();
+		if(submitName.contains("_")){
+			QStringList sl = submitName.split("_");
+			submitName = sl.last();
+		}
+
+		std::cout << qPrintable(submitName) << ": ";
+		// Pick first object result
+		QDomElement e = doc.firstChildElement().firstChildElement();
+		while(!e.isNull())
+		{
+			if(e.tagName().endsWith(".obj"))
+			{
+				QDomElement name = e.elementsByTagName("mesh-name").at(0).toElement();
+				QDomElement time = e.elementsByTagName("edit-time").at(0).toElement();
+				QDomElement stackability = e.elementsByTagName("stackability").at(0).toElement();
+				QDomElement ratio = e.elementsByTagName("stackability-ratio").at(0).toElement();
+				QDomElement num_edits = e.elementsByTagName("edit-num-operations").at(0).toElement();
+				QDomElement stacking_shift = e.elementsByTagName("stacking-shift").at(0).toElement();
+
+				QString meshName = name.text();
+				if (time_stackability.contains(meshName))
+				{
+					QString line = time.text() + ',' + stackability.text() + "\n";
+					time_stackability[meshName]->write(qPrintable(line));
+
+					std::cout << qPrintable(meshName) << ",";		
+				}
+
+			}
+
+			e = e.nextSiblingElement();
+		}
+
+		std::cout << '\n';		
 
 	}
+
+	// Close 
+	foreach (QString shapeID, shapes)
+		time_stackability[shapeID]->close();
 }
